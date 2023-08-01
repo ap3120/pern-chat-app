@@ -72,7 +72,7 @@ router.get('/logout', (req, res, next) => {
   });
 })
 
-router.get('/users', ensureAuthentication, (req, res) => {
+router.get('/users', /*ensureAuthentication,*/ (req, res) => {
   query('select * from users order by user_id asc', (err, results) => {
     if (err) {throw err}
     res.status(200).json(results.rows);
