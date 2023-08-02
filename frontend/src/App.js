@@ -3,10 +3,10 @@ import {BrowserRouter as Router, Switch, Routes, Route, Link, Navigate} from "re
 
 // components
 import {RegisterCard} from './components/RegisterCard';
+import {LoginCard} from './components/LoginCard.js';
+
 import {ThemeSettingProvider, useTheme} from './context/ThemeContext';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-
-
 
 function App() {
 
@@ -46,7 +46,8 @@ function App() {
       <ThemeProvider theme={theme}>
         <Router>
           <Routes>
-            <Route path='' element={<RegisterCard/>}/>
+            <Route path='/' element={<LoginCard/>}/>
+            <Route path='/register' element={<RegisterCard/>}/>
           </Routes>
         </Router>
       </ThemeProvider>

@@ -8,17 +8,13 @@ import OutlinedInput from '@mui/material/OutlinedInput';
 import { NavLink } from 'react-router-dom';
 import './RegisterCard.css';
 
-export const RegisterCard = () => {
+export const LoginCard = () => {
 
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmationPassword, setShowConfirmationPassword] = useState(false);
   const [username, setUsername] = useState('');
-  const [newUsername, setNewUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmationPassword, setConfirmationPassword] = useState('');
   const [errors, setErrors] = useState({});
   const [openError, setOpenError] = useState(false);
-  const [openSuccess, setOpenSuccess] = useState(false);
   const [msg, setMsg] = useState('');
 
   const dark = useTheme();
@@ -26,21 +22,19 @@ export const RegisterCard = () => {
   const ENDPOINT = 'http://localhost:3000';
 
   const handleClickShowPassword = () => setShowPassword((show) => !show);
-  const handleClickShowConfirmationPassword = () => setShowConfirmationPassword((show) => !show);
 
   const validate = () => {
     let err = {};
     err.username = username === '' ? 'Username is required' : '';
-    err.password = password.length < 8 ? 'Password must be at least height characters long' : '';
-    err.confirmationPassword = password !== confirmationPassword ? 'Passwords must match' : '';
+    err.password = password === '' ? 'Password is required' : '';
     setErrors(err);
     return Object.values(err).every(x => x === '');
   }
 
-  const handleRegister = async() => {
+  const handleLogin = async() => {
     if (!validate()) {return;}
     try {
-      const response = await fetch(`${ENDPOINT}/register`, {
+      const response = await fetch(`${ENDPOINT}/login`, {
         method: 'POST',
         body: JSON.stringify({
           username: username,
@@ -57,25 +51,12 @@ export const RegisterCard = () => {
         throw new Error("Network response was not OK.");
       }
       const jsonResponse = await response.json();
-      if (jsonResponse.msg) {
-        setMsg(jsonResponse.msg);
-        setOpenError(true);
-      } else {
-        setNewUsername(jsonResponse.username);
-        setOpenSuccess(true);
-      }
+      console.log(jsonResponse); 
     } catch (error) {
       console.log(error);
       setMsg("Couldn't connect to server...");
       setOpenError(true);
     }
-  }
-
-  const handleCloseSuccess = (event, reason) => {
-    if (reason === 'clickaway') {
-      return;
-    }
-    setOpenSuccess(false);
   }
 
   const handleCloseError = (event, reason) => {
@@ -85,7 +66,6 @@ export const RegisterCard = () => {
     setOpenError(false);
   }
 
-  useEffect(() => {console.log(username)}, [username])
   return (
     <div style={{width:'100%', height:'100vh', backgroundColor: dark ? '#212121' : '#fff', display:'flex', justifyContent:'center', alignItems:'center'}}>
       <Card sx={{display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'center', p:5}}>
@@ -117,33 +97,9 @@ export const RegisterCard = () => {
         {errors.password && (
           <FormHelperText error>{errors.password}</FormHelperText>
         )}
-        <OutlinedInput
-          type={showConfirmationPassword ? 'text' : 'password'}
-          endAdornment={
-            <InputAdornment position="end">
-              <IconButton
-                aria-label="toggle password visibility"
-                onClick={handleClickShowConfirmationPassword}
-                edge="end"
-              >
-                {showConfirmationPassword ? <VisibilityOff /> : <Visibility />}
-              </IconButton>
-            </InputAdornment>
-          }
-          placeholder="Confirm Password"
-          sx={{m:1, width:'100%'}}
-          onChange={(e) => {setConfirmationPassword(e.target.value)}}
-          {...(errors.confirmationPassword && {error: true})}
-        />
-        {errors.confirmationPassword && (
-          <FormHelperText error>{errors.confirmationPassword}</FormHelperText>
-        )}
-        <Button variant='contained' onClick={handleRegister}>Register</Button>
-        <p>Already have an account ? <NavLink to='/'>Login here</NavLink></p>
+        <Button variant='contained' onClick={handleLogin}>Login</Button>
+        <p>Don't have an account yet? <NavLink to='/register'>Register here</NavLink></p>
       </Card>
-      <Snackbar open={openSuccess} autoHideDuration={3000} onClose={handleCloseSuccess} anchorOrigin={{vertical: 'bottom', horizontal: 'center'}}>
-        <Alert severity='success' onClose={handleCloseSuccess}>User {newUsername} was successfully created.</Alert>
-      </Snackbar>
       <Snackbar open={openError} autoHideDuration={3000} onClose={handleCloseError} anchorOrigin={{vertical: 'bottom', horizontal: 'center'}}>
         <Alert severity='error' onClose={handleCloseError}>{msg}</Alert>
       </Snackbar>

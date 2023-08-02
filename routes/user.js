@@ -18,7 +18,7 @@ const checkIfUserExists = (username) => {
   });
 }
 
-router.post('/register', /*ensureNotAuthentication,*/ async (req, res) => {
+router.post('/register', async (req, res) => {
   const {username, password} = req.body;
   const userExist = await checkIfUserExists(username);
   if (userExist === true) {
@@ -36,7 +36,7 @@ router.use(passport.initialize());
 router.use(passport.session());
 
 passport.serializeUser((user, done) => {
-  done(null, user.id);
+  done(null, user.user_id);
 })
 
 passport.deserializeUser((id, done) => {
@@ -57,7 +57,7 @@ passport.use(new LocalStrategy((username, password, done) => {
   })
 }))
 
-router.post('/login', /*ensureNotAuthentication,*/ passport.authenticate('local', {failWithError: true}), (req, res) => {
+router.post('/login', passport.authenticate('local', {failWithError: true}), (req, res) => {
   if (req.session) {
     res.json({user: req.user, session: req.session});
   }
@@ -72,7 +72,7 @@ router.get('/logout', (req, res, next) => {
   });
 })
 
-router.get('/users', /*ensureAuthentication,*/ (req, res) => {
+router.get('/users', (req, res) => {
   query('select * from users order by user_id asc', (err, results) => {
     if (err) {throw err}
     res.status(200).json(results.rows);
