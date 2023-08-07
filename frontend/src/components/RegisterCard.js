@@ -5,8 +5,9 @@ import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import InputAdornment from '@mui/material/InputAdornment';
 import OutlinedInput from '@mui/material/OutlinedInput';
-import { NavLink } from 'react-router-dom';
-import './RegisterCard.css';
+import { NavLink, Navigate } from 'react-router-dom';
+import {ThemeToggle} from './ThemeToggle.js';
+//import {getCurrentSession} from '../utils/getCurrentSession.js';
 
 export const RegisterCard = () => {
 
@@ -50,7 +51,6 @@ export const RegisterCard = () => {
           "Content-Type": "application/json"
         }
       });
-      console.log(response);
       if (!response.ok) {
         setMsg('Something went wrong...');
         setOpenError(true);
@@ -85,10 +85,14 @@ export const RegisterCard = () => {
     setOpenError(false);
   }
 
-  useEffect(() => {console.log(username)}, [username])
+  if (sessionStorage.getItem('user_id')) {
+    return (<Navigate to='/dashboard'/>);
+  }
+
   return (
     <div style={{width:'100%', height:'100vh', backgroundColor: dark ? '#212121' : '#fff', display:'flex', justifyContent:'center', alignItems:'center'}}>
       <Card sx={{display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'center', p:5}}>
+        <ThemeToggle />
         <TextField
           label="Username"
           variant="outlined"

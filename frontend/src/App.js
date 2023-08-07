@@ -4,11 +4,20 @@ import {BrowserRouter as Router, Switch, Routes, Route, Link, Navigate} from "re
 // components
 import {RegisterCard} from './components/RegisterCard';
 import {LoginCard} from './components/LoginCard.js';
+import { Dashboard } from "./components/Dashboard.js";
 
 import {ThemeSettingProvider, useTheme} from './context/ThemeContext';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 
-function App() {
+export const App = () => {
+  return (
+    <ThemeSettingProvider>
+      <AppContent />
+    </ThemeSettingProvider>
+  )
+}
+
+const AppContent = () => {
 
   const dark = useTheme();
 
@@ -42,17 +51,14 @@ function App() {
   });
 
   return (
-    <ThemeSettingProvider>
-      <ThemeProvider theme={theme}>
-        <Router>
-          <Routes>
-            <Route path='/' element={<LoginCard/>}/>
-            <Route path='/register' element={<RegisterCard/>}/>
-          </Routes>
-        </Router>
-      </ThemeProvider>
-    </ThemeSettingProvider>
+    <ThemeProvider theme={theme}>
+      <Router>
+        <Routes>
+          <Route path='/' element={<LoginCard/>}/>
+          <Route path='/register' element={<RegisterCard/>}/>
+          <Route path='/dashboard' element={<Dashboard/>}/>
+        </Routes>
+      </Router>
+    </ThemeProvider>
   );
 }
-
-export default App;

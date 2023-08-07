@@ -5,8 +5,8 @@ import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import InputAdornment from '@mui/material/InputAdornment';
 import OutlinedInput from '@mui/material/OutlinedInput';
-import { NavLink } from 'react-router-dom';
-import './RegisterCard.css';
+import { NavLink, Navigate, useNavigate } from 'react-router-dom';
+import {ThemeToggle} from './ThemeToggle.js';
 
 export const LoginCard = () => {
 
@@ -18,6 +18,7 @@ export const LoginCard = () => {
   const [msg, setMsg] = useState('');
 
   const dark = useTheme();
+  const navigate = useNavigate();
 
   const ENDPOINT = 'http://localhost:3000';
 
@@ -44,14 +45,15 @@ export const LoginCard = () => {
           "Content-Type": "application/json"
         }
       });
-      console.log(response);
       if (!response.ok) {
-        setMsg('Something went wrong...');
-        setOpenError(true);
-        throw new Error("Network response was not OK.");
+        setErrors({username: 'Invalid credentials', password: 'Invalid credentials'});
+        return;
       }
       const jsonResponse = await response.json();
-      console.log(jsonResponse); 
+      console.log(jsonResponse)
+      sessionStorage.setItem('user_id', jsonResponse.user.user_id);
+      sessionStorage.setItem('username', jsonResponse.user.username)
+      navigate('/dashboard');
     } catch (error) {
       console.log(error);
       setMsg("Couldn't connect to server...");
@@ -66,9 +68,14 @@ export const LoginCard = () => {
     setOpenError(false);
   }
 
+  if (sessionStorage.getItem('user_id')) {
+    return (<Navigate to='/dashboard'/>);
+  }
+
   return (
     <div style={{width:'100%', height:'100vh', backgroundColor: dark ? '#212121' : '#fff', display:'flex', justifyContent:'center', alignItems:'center'}}>
       <Card sx={{display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'center', p:5}}>
+        <ThemeToggle/>
         <TextField
           label="Username"
           variant="outlined"
