@@ -18,7 +18,23 @@ const checkIfUserExists = (username) => {
   });
 }
 
-router.post('/register', async (req, res) => {
+const ensureAuthentication = (req, res, next) => {
+  if (req.session.passport) {
+    return next();
+  } else {
+    res.status(403).json({msg: 'Please login to view this page.'});
+  }
+}
+
+const ensureNotAuthentication = (req, res, next) => {
+  if (!req.session.passport) {
+    return next();
+  } else {
+    res.status(403).json({msg: 'Please logout to view this page.'})
+  }
+}
+
+router.post('/register', ensureNotAuthentication, async (req, res) => {
   const {username, password} = req.body;
   const userExist = await checkIfUserExists(username);
   if (userExist === true) {
@@ -59,6 +75,7 @@ passport.use(new LocalStrategy((username, password, done) => {
 
 router.post('/login', passport.authenticate('local', {failWithError: true}), (req, res) => {
   if (req.session) {
+    console.log(req.session);
     res.json({user: req.user, session: req.session});
   }
 }, (err, req, res, next) => {
@@ -72,8 +89,20 @@ router.get('/logout', (req, res, next) => {
   });
 })
 
+router.get('/currentsession', (req, res) => {
+  console.log("called");
+  //if (!req.session.passport) {
+  if (!req.user) {
+    console.log("too bad, no user.")
+    res.json({msg: 'No user is connected'});
+  } else {
+    console.log("there is a session!");
+    res.json({msg: `User is connected`, user_id: req.user.user_id, username: req.user.username});
+  }
+})
+
 router.get('/users', (req, res) => {
-  query('select * from users order by user_id asc', (err, results) => {
+  query('select user_id, username from users order by user_id asc', (err, results) => {
     if (err) {throw err}
     res.status(200).json(results.rows);
   })
@@ -89,7 +118,7 @@ const getPassword = (id) => {
   })
 }
 
-router.put('/users/:id', async (req, res) => {
+router.put('/users/:id', ensureAuthentication, async (req, res) => {
   const id = parseInt(req.params.id);
   const {password, newPassword} = req.body;
   const pw = await getPassword(id);
@@ -106,7 +135,7 @@ router.put('/users/:id', async (req, res) => {
   }
 })
 
-router.delete('/users/:id', async (req, res) => {
+router.delete('/users/:id', ensureAuthentication, async (req, res) => {
   const id = parseInt(req.params.id);
   const {password} = req.body;
   const pw = await getPassword(id);

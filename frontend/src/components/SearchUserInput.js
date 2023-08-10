@@ -1,6 +1,6 @@
 import { TextField, Autocomplete } from '@mui/material';
 import {useState} from 'react';
-export const SearchUserInput = ({users, setChats}) => {
+export const SearchUserInput = ({users, setChats, setFilteringUsers}) => {
 
   const [value, setValue] = useState('');
 
@@ -34,6 +34,7 @@ export const SearchUserInput = ({users, setChats}) => {
       })
       const jsonResp = await resp.json();
       setChats(prevChats => [...prevChats, jsonResp]);
+      setFilteringUsers(false);
     } catch(error) {
       console.log(error);
     }
