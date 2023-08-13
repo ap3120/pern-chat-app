@@ -1,5 +1,6 @@
-import { Typography } from "@mui/material";
+import { Typography, Box } from "@mui/material";
 import { useEffect, useRef } from "react";
+import dayjs from "dayjs";
 
 export const MessageContainer = ({contact, messages, setMessages}) => {
 
@@ -7,11 +8,14 @@ export const MessageContainer = ({contact, messages, setMessages}) => {
 
   const getStyle = (msg) => {
     return {
+      p: 1,
+      borderRadius: '15px',
       marginLeft: msg.sender_id == sessionStorage.getItem('user_id') ? 'auto' : 0,
       marginRight: msg.sender_id == sessionStorage.getItem('user_id') ? 0 : 'auto',
-      border: '1px solid blue',
       marginBottom: '10px',
       width: 'fit-content',
+      backgroundColor: msg.sender_id == sessionStorage.getItem('user_id') ? 'primary.main' : 'secondary.main',
+      color: msg.sender_id == sessionStorage.getItem('user_id') ? 'primary.contrastText' : 'secondary.contrastText',
     }
   }
   const getMessages = async() => {
@@ -34,16 +38,15 @@ export const MessageContainer = ({contact, messages, setMessages}) => {
 
   return (
 
-    <div ref={ref} style={{width:'100%', border:'1px solid green', padding:10, overflowX:'hidden', flexGrow:1, overflowY:'scroll'}}>
+    <Box ref={ref} sx={{p: 2, width:'100%', backgroundColor:'background.main', overflowX:'hidden', flexGrow:1, overflowY:'scroll'}}>
       {messages.map((msg, index) => (
-        <div key={index} style={getStyle(msg)}>
-          {/*<Typography sx={{overflowWrap:'break-word', wordBreak: 'break-word'}}>{msg.content}</Typography>*/}
+        <Box key={index} sx={getStyle(msg)}>
           {msg.content.split('<br />').map((elem, i) => (
-            <Typography key={i} sx={{overflowWrap:'break-word', wordBreak:'break-word'}}>{elem}</Typography>
+            <Typography variant='body2' key={i} sx={{overflowWrap:'break-word', wordBreak:'break-word'}}>{elem}</Typography>
           ))}
-          <Typography>{msg.send_at}</Typography>
-        </div>
+          <Typography sx={{textAlign:'right', fontSize:'0.7rem'}}>{dayjs(msg.send_at).format('hh:mm, ddd DD MMM YYYY')}</Typography>
+        </Box>
       ))}
-    </div>
+    </Box>
   )
 }

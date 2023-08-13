@@ -1,13 +1,21 @@
 import { useState } from "react";
-import { TextareaAutosize, IconButton } from "@mui/material";
+import { TextareaAutosize, IconButton, Box } from "@mui/material";
 import { styled } from "@mui/system";
 import SendIcon from '@mui/icons-material/Send';
 
 const StyledTextArea = styled(TextareaAutosize) (
-  () => `
+  ({theme}) => `
 width: 90%;
 font-size: 1rem;
 line-height: 1.5;
+background: transparent;
+color: ${theme.palette.text.main};
+
+&:focus {
+border-color: ${theme.palette.primary.main};
+box-shadow: 0 0 0 0;
+outline: 0;
+}
 `
 )
 export const TextArea = ({inputRef, contact, setMessages}) => {
@@ -51,7 +59,7 @@ export const TextArea = ({inputRef, contact, setMessages}) => {
   }
 
   return (
-    <div style={{display:'flex', alignItems:'end'}}>
+    <Box sx={{pb: 2, display:'flex', justifyContent:'center', alignItems:'end', backgroundColor:'background.main'}}>
       <StyledTextArea
         ref={inputRef}
         value={message}
@@ -60,8 +68,8 @@ export const TextArea = ({inputRef, contact, setMessages}) => {
         onChange={(e) => setMessage(e.target.value)}
       />
       <IconButton onClick={handleClick}>
-        <SendIcon/>
+        <SendIcon sx={{color: 'text.main'}}/>
       </IconButton>
-    </div>
+    </Box>
   )
 }

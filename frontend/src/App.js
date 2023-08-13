@@ -25,13 +25,20 @@ const AppContent = () => {
   const theme = createTheme({
     palette: {
       primary: {
-        main: dark ? '#9c27b0' : '#7b1fa2',
-        contrastText: '#fff',
+        main: dark ? '#892b59' : '#802957',
+        contrastText: '#cfdeda',
       },
-      /*secondary: {
-      main:,
-      contrastText:,
-    },
+      secondary: {
+        main: dark ? '#ca493c': '#b13625',
+        contrastText: '#cfdeda',
+      },
+      background: {
+        main: dark ? '#272727' : '#fff',
+      },
+      text: {
+        main: dark ? '#cfdeda' : '#000',
+      },
+    /*
     error: {
       main:,
       contrastText:,
