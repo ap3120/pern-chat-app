@@ -44,7 +44,7 @@ export const Contacts = ({setContact}) => {
   }, [filteringUsers])
 
   return (
-    <div style={{width:'500px'}}>
+    <div style={{width:'20vw', minWidth:'400px'}}>
       <Navbar setFilteringUsers={setFilteringUsers} setUsers={setUsers}/>
       {filteringUsers && <SearchUserInput users={users} setChats={setChats} setFilteringUsers={setFilteringUsers}/>}
       <List>

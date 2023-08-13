@@ -75,7 +75,6 @@ passport.use(new LocalStrategy((username, password, done) => {
 
 router.post('/login', passport.authenticate('local', {failWithError: true}), (req, res) => {
   if (req.session) {
-    console.log(req.session);
     res.json({user: req.user, session: req.session});
   }
 }, (err, req, res, next) => {
@@ -118,14 +117,15 @@ const getPassword = (id) => {
   })
 }
 
-router.put('/users/:id', ensureAuthentication, async (req, res) => {
+router.put('/users/:id', async (req, res) => {
   const id = parseInt(req.params.id);
-  const {password, newPassword} = req.body;
+  const {currentPassword, password} = req.body;
+  console.log(id, currentPassword, password);
   const pw = await getPassword(id);
-  const matchedPassword = await bcrypt.compare(password, pw);
+  const matchedPassword = await bcrypt.compare(currentPassword, pw);
   if (matchedPassword) {
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt); 
+    const hashedPassword = await bcrypt.hash(password, salt); 
     query('update users set password = $1 where user_id = $2', [hashedPassword, id], (err, results) => {
       if (err) {throw err;}
       return res.status(200).json({msg: 'Password successfully updated.'});

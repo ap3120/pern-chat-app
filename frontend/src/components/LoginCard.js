@@ -1,4 +1,4 @@
-import {useState, useEffect} from 'react';
+import {useState} from 'react';
 import {Button, Card, TextField, IconButton, FormHelperText, Snackbar, Alert} from '@mui/material';
 import { useTheme } from '../context/ThemeContext.js';
 import Visibility from '@mui/icons-material/Visibility';

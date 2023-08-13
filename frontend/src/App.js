@@ -5,6 +5,7 @@ import {BrowserRouter as Router, Switch, Routes, Route, Link, Navigate} from "re
 import {RegisterCard} from './components/RegisterCard';
 import {LoginCard} from './components/LoginCard.js';
 import { Dashboard } from "./components/Dashboard.js";
+import {Profile} from './components/profile';
 
 import {ThemeSettingProvider, useTheme} from './context/ThemeContext';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
@@ -57,6 +58,7 @@ const AppContent = () => {
           <Route path='/' element={<LoginCard/>}/>
           <Route path='/register' element={<RegisterCard/>}/>
           <Route path='/dashboard' element={<Dashboard/>}/>
+          <Route path='/profile' element={<Profile/>}/>
         </Routes>
       </Router>
     </ThemeProvider>
