@@ -10,16 +10,18 @@ font-size: 1rem;
 line-height: 1.5;
 `
 )
-export const TextArea = ({contact, setMessages}) => {
+export const TextArea = ({inputRef, contact, setMessages}) => {
 
   const [message, setMessage] = useState('');
 
   const handleClick = async() => {
+    const msg = message.replace(/[\n]/g, '<br />');
+    console.log(msg);
     try {
       const response = await fetch('http://localhost:3000/message', {
         method: 'POST',
         body: JSON.stringify({
-          content: message,
+          content: msg,
           sender_id: sessionStorage.getItem('user_id'),
           sender_username: sessionStorage.getItem('username'),
           receiver_id: contact.user_id,
@@ -37,11 +39,24 @@ export const TextArea = ({contact, setMessages}) => {
     }
   }
 
+  const handleKeyDown = e => {
+    if (e.keyCode === 13 && !e.shiftKey) {
+      handleClick();
+    } else if (e.keyCode === 13 && e.shiftKey) {
+      e.preventDefault();
+      setMessage(prevMessage => prevMessage + '\n');
+    } else {
+      return;
+    }
+  }
+
   return (
     <div style={{display:'flex', alignItems:'end'}}>
       <StyledTextArea
+        ref={inputRef}
         value={message}
         maxRows={4}
+        onKeyDown={(e) => handleKeyDown(e)}
         onChange={(e) => setMessage(e.target.value)}
       />
       <IconButton onClick={handleClick}>

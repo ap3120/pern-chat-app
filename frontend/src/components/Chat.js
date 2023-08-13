@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {TextArea} from './TextArea';
 import {MessageContainer} from './MessageContainer';
 import { AppBar, Toolbar, Typography } from '@mui/material';
@@ -6,6 +6,11 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 
 export const Chat = ({contact}) => {
   const [messages, setMessages] = useState([]);
+  const inputRef = useRef();
+
+  useEffect(() => {
+    if (inputRef.current) inputRef.current.focus();
+  }, [contact]);
 
   return (
     contact.user_id &&
@@ -17,7 +22,7 @@ export const Chat = ({contact}) => {
           </Toolbar>
         </AppBar>
         <MessageContainer contact={contact} messages={messages} setMessages={setMessages}/>
-        <TextArea contact={contact} setMessages={setMessages}/>
+        <TextArea inputRef={inputRef} contact={contact} setMessages={setMessages}/>
       </div>
   )
 }

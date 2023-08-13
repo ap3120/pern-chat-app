@@ -1,7 +1,9 @@
 import { Typography } from "@mui/material";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 export const MessageContainer = ({contact, messages, setMessages}) => {
+
+  const ref = useRef();
 
   const getStyle = (msg) => {
     return {
@@ -14,10 +16,8 @@ export const MessageContainer = ({contact, messages, setMessages}) => {
   }
   const getMessages = async() => {
     try {
-      console.log(contact.chat_id);
       const response = await fetch(`http://localhost:3000/message/${contact.chat_id}`);
       const jsonResponse = await response.json();
-      console.log(jsonResponse)
       setMessages(jsonResponse);
     } catch (error) {
       console.log(error);
@@ -28,12 +28,19 @@ export const MessageContainer = ({contact, messages, setMessages}) => {
     getMessages();
   }, [contact])
 
+  useEffect(() => {
+    ref.current.scrollTop = ref.current.scrollHeight;
+  }, [messages]);
+
   return (
 
-    <div style={{width:'100%', border:'1px solid green', padding:10, overflowX:'hidden', flexGrow:1, overflowY:'scroll'}}>
+    <div ref={ref} style={{width:'100%', border:'1px solid green', padding:10, overflowX:'hidden', flexGrow:1, overflowY:'scroll'}}>
       {messages.map((msg, index) => (
         <div key={index} style={getStyle(msg)}>
-          <Typography sx={{overflowWrap:'break-word', wordBreak: 'break-word'}}>{msg.content}</Typography>
+          {/*<Typography sx={{overflowWrap:'break-word', wordBreak: 'break-word'}}>{msg.content}</Typography>*/}
+          {msg.content.split('<br />').map((elem, i) => (
+            <Typography key={i} sx={{overflowWrap:'break-word', wordBreak:'break-word'}}>{elem}</Typography>
+          ))}
           <Typography>{msg.send_at}</Typography>
         </div>
       ))}
