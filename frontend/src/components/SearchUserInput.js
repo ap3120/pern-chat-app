@@ -5,11 +5,10 @@ export const SearchUserInput = ({users, setChats, setFilteringUsers}) => {
   const [value, setValue] = useState('');
 
   const arr = users.map(elem => elem.username);
-  
+
   const handleChange = async(e, v) => {
     const index = users.findIndex(elem => elem.username === v);
     if (index === -1) {return;}
-    console.log(v)
     setValue(v);
     try {
     const response = await fetch('http://localhost:3000/chat', {
@@ -21,8 +20,6 @@ export const SearchUserInput = ({users, setChats, setFilteringUsers}) => {
       })
     })
     const jsonResponse = await response.json();
-    console.log(jsonResponse);
-      
       const user_id = users[index].user_id;
       const resp = await fetch('http://localhost:3000/chat/users_chats', {
         method: 'POST',
@@ -44,9 +41,9 @@ export const SearchUserInput = ({users, setChats, setFilteringUsers}) => {
   return (
     <Autocomplete
       value={value}
-      disablePortal
+      //disablePortal
       options={arr}
-      sx={{ width: '100%', marginTop:'10px' }}
+      sx={{ width: '100%', marginTop:'10px'}}
       renderInput={(params) => <TextField {...params} label="Search contact"/>}
       onChange={(e, v) => handleChange(e, v)}
     />

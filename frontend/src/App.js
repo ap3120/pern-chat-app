@@ -34,10 +34,18 @@ const AppContent = () => {
       },
       background: {
         main: dark ? '#272727' : '#fff',
+        default: dark ? '#272727' : '#fff',
+        paper: dark ? '#272727' : '#fff',
+        hover: dark ? '#515151' : '#b9b9b9',
       },
       text: {
         main: dark ? '#cfdeda' : '#000',
+        primary: dark ? '#cfdeda' : '#000',
+        secondary: dark ? '#cfdeda' : '#000',
       },
+      action: {
+        hover: dark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
+      }
     /*
     error: {
       main:,

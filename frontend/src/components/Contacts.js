@@ -1,4 +1,4 @@
-import { List, ListItem, ListItemText } from '@mui/material';
+import { List, ListItem, ListItemText, Box } from '@mui/material';
 import {useState, useEffect} from 'react';
 import {Navbar} from './Navbar';
 import {SearchUserInput} from './SearchUserInput';
@@ -9,6 +9,24 @@ export const Contacts = ({setContact}) => {
   const [filteringUsers, setFilteringUsers] = useState(false);
   const [users, setUsers] = useState([]);
   const [chats, setChats] = useState([]);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const getStyle = i => {
+    return [
+      {
+        color: 'text.main',
+        cursor: 'pointer',
+        backgroundColor: i === selectedIndex ? 'background.hover' : 'background.main',
+        borderRadius: '15px',
+        mb: 1,
+      },
+      (theme) => ({
+        '&:hover': {
+          backgroundColor: theme.palette.background.hover,
+        },
+      }),
+    ]
+  }
 
   const getChats = async() => {
     try {
@@ -35,7 +53,8 @@ export const Contacts = ({setContact}) => {
     }
   }
 
-  const handleClick = chat => {
+  const handleClick = (chat, index) => {
+    setSelectedIndex(index);
     setContact({username: chat.chat_contact, user_id: chat.chat_contact_id, chat_id: chat.chat_id})
   }
 
@@ -44,19 +63,21 @@ export const Contacts = ({setContact}) => {
   }, [filteringUsers])
 
   return (
-    <div style={{width:'20vw', minWidth:'400px'}}>
+    <Box sx={{width:'20vw', minWidth:'400px', backgroundColor:'background.main'}}>
       <Navbar setFilteringUsers={setFilteringUsers} setUsers={setUsers}/>
-      {filteringUsers && <SearchUserInput users={users} setChats={setChats} setFilteringUsers={setFilteringUsers}/>}
-      <List>
+      {filteringUsers &&
+        <Box sx={{p:2}}>
+          <SearchUserInput users={users} setChats={setChats} setFilteringUsers={setFilteringUsers}/>
+        </Box>
+      }
+      <List sx={{p: 2}}>
       {chats.map((chat, index) => (
-        <ListItem key={index} onClick={() => handleClick(chat)}>
+        <ListItem sx={getStyle(index)} key={index} onClick={() => handleClick(chat, index)}>
           <AccountCircleIcon sx={{fontSize:'50px', marginRight:'20px'}}/>
           <ListItemText>{chat.chat_contact}</ListItemText>
         </ListItem>
       ))}
       </List>
-
-
-    </div>
+    </Box>
   )
 }

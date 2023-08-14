@@ -13,7 +13,7 @@ export const Chat = ({contact}) => {
   }, [contact]);
 
   return (
-    <Box sx={{ maxHeight:'100vh', borderLeft: '2px solid', borderColor:'text.main', flexGrow:1, display:'flex', flexDirection:'column', justifyContent:'space-between', backgroundColor:'background.main'}}>
+    <Box sx={{ maxHeight:'100vh', borderLeft: '1px solid', borderColor:'text.main', flexGrow:1, display:'flex', flexDirection:'column', justifyContent:'space-between', backgroundColor:'background.main'}}>
       {contact.user_id &&
         <>
           <AppBar position='static'>
