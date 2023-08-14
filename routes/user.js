@@ -120,7 +120,6 @@ const getPassword = (id) => {
 router.put('/users/:id', async (req, res) => {
   const id = parseInt(req.params.id);
   const {currentPassword, password} = req.body;
-  console.log(id, currentPassword, password);
   const pw = await getPassword(id);
   const matchedPassword = await bcrypt.compare(currentPassword, pw);
   if (matchedPassword) {

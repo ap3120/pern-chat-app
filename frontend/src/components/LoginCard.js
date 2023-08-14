@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import {Button, Card, TextField, IconButton, FormHelperText, Snackbar, Alert} from '@mui/material';
+import {Box, Button, Card, TextField, IconButton, FormHelperText, Snackbar, Alert} from '@mui/material';
 import { useTheme } from '../context/ThemeContext.js';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
@@ -7,6 +7,8 @@ import InputAdornment from '@mui/material/InputAdornment';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import { NavLink, Navigate, useNavigate } from 'react-router-dom';
 import {ThemeToggle} from './ThemeToggle.js';
+import lightBg from '../media/lightbg.jpeg';
+import darkBg from '../media/darkbg.jpeg';
 
 export const LoginCard = () => {
 
@@ -73,8 +75,18 @@ export const LoginCard = () => {
   }
 
   return (
-    <div style={{width:'100%', height:'100vh', backgroundColor: dark ? '#212121' : '#fff', display:'flex', justifyContent:'center', alignItems:'center'}}>
-      <Card sx={{display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'center', p:5}}>
+    <Box sx={{
+      width:'100vw',
+      height:'100vh',
+      display:'flex',
+      justifyContent:'center',
+      alignItems:'center',
+      backgroundImage: dark ? `url(${darkBg})` : `url(${lightBg})`,
+      backgroundRepeat:'no-repeat',
+      backgroundSize:'cover',
+      backgroundPosition:'center'
+    }}>
+      <Card sx={{display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'center', p:5, backgroundColor:'transparent', backdropFilter:'blur(20px)'}}>
         <ThemeToggle/>
         <TextField
           label="Username"
@@ -110,6 +122,6 @@ export const LoginCard = () => {
       <Snackbar open={openError} autoHideDuration={3000} onClose={handleCloseError} anchorOrigin={{vertical: 'bottom', horizontal: 'center'}}>
         <Alert severity='error' onClose={handleCloseError}>{msg}</Alert>
       </Snackbar>
-    </div>
+    </Box>
   )
 }
