@@ -46,23 +46,6 @@ const AppContent = () => {
       action: {
         hover: dark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
       }
-    /*
-    error: {
-      main:,
-      contrastText:,
-    },
-    warning: {
-      main:,
-      contrastText:,
-    },
-    info: {
-      main:,
-      contrastText:,
-    },
-    success: {
-      main:,
-      contrastText:,
-    },*/
     },
   });
 

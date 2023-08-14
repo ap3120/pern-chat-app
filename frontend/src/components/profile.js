@@ -1,5 +1,5 @@
 import { useState } from "react";
-import {Button, Card, IconButton, FormHelperText, Snackbar, Alert, Typography} from '@mui/material';
+import {Box, Button, Card, IconButton, FormHelperText, Snackbar, Alert, Typography} from '@mui/material';
 import { useTheme } from '../context/ThemeContext.js';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
@@ -21,10 +21,8 @@ export const Profile = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState({});
 
-  const dark = useTheme();
-
   const navigate = useNavigate();
-  
+
   const validate = () => {
     let tmp = {};
     tmp.currentPassword = currentPassword === '' ? 'This field is required' : '';
@@ -85,86 +83,84 @@ export const Profile = () => {
   }
 
   return (
-    <div style={{width:'100%', height:'100vh', backgroundColor: dark ? '#212121' : '#fff', display:'flex', justifyContent:'space-around', alignItems:'center', flexDirection:'column'}}>
-      <div style={{display:'flex'}}>
+    <Box sx={{width:'100vw', height:'100vh', display:'flex', justifyContent:'start', alignItems:'center', flexDirection:'column', backgroundColor:'background.default'}}>
+      <Box sx={{display:'flex', alignItems:'center', mt: 2, mb: 5}}>
         <IconButton onClick={() => {navigate('/dashboard')}}>
-          <ArrowBackIcon/>
+          <ArrowBackIcon sx={{fontSize:'30px', color:'text.primary'}}/>
         </IconButton>
-        <Typography variant='h2'>Welcome, {sessionStorage.getItem('username')}</Typography>
-      </div>
-      <Card sx={{display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'center', p:5}}>
+        <Typography variant='h2' sx={{color: 'text.primary', ml: 2, mr: 2}}>Welcome, {sessionStorage.getItem('username')}</Typography>
         <ThemeToggle/>
-        <OutlinedInput
-          type={showCurrentPassword ? 'text' : 'password'}
-          endAdornment={
-            <InputAdornment position="end">
-              <IconButton
-                aria-label="toggle password visibility"
-                onClick={handleClickShowCurrentPassword}
-                edge="end"
-              >
-                {showCurrentPassword ? <VisibilityOff /> : <Visibility />}
-              </IconButton>
-            </InputAdornment>
-          }
-          placeholder="Current Password"
-          sx={{m:1, width:'100%'}}
-          onChange={(e) => {setCurrentPassword(e.target.value)}}
-          {...(errors.currentPassword && {error: true})}
-        />
-        <OutlinedInput
-          type={showPassword ? 'text' : 'password'}
-          endAdornment={
-            <InputAdornment position="end">
-              <IconButton
-                aria-label="toggle password visibility"
-                onClick={handleClickShowPassword}
-                edge="end"
-              >
-                {showPassword ? <VisibilityOff /> : <Visibility />}
-              </IconButton>
-            </InputAdornment>
-          }
-          placeholder="Password"
-          sx={{m:1, width:'100%'}}
-          onChange={(e) => {setPassword(e.target.value)}}
-          {...(errors.password && {error: true})}
-        />
-        <OutlinedInput
-          type={showConfirmPassword ? 'text' : 'password'}
-          endAdornment={
-            <InputAdornment position="end">
-              <IconButton
-                aria-label="toggle password visibility"
-                onClick={handleClickShowConfirmPassword}
-                edge="end"
-              >
-                {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-              </IconButton>
-            </InputAdornment>
-          }
-          placeholder="Confirm Password"
-          sx={{m:1, width:'100%'}}
-          onChange={(e) => {setConfirmPassword(e.target.value)}}
-          {...(errors.confirmPassword && {error: true})}
-        />
-        {errors.currentPassword && (
-          <FormHelperText error>{errors.currentPassword}</FormHelperText>
-        )}
-        {errors.password && (
-          <FormHelperText error>{errors.password}</FormHelperText>
-        )}
-        {errors.confirmPassword && (
-          <FormHelperText error>{errors.confirmPassword}</FormHelperText>
-        )}
-        <Button variant='contained' onClick={handleClick}>Change Password</Button>
-      </Card>
+      </Box>
+      <OutlinedInput
+        type={showCurrentPassword ? 'text' : 'password'}
+        endAdornment={
+          <InputAdornment position="end">
+            <IconButton
+              aria-label="toggle password visibility"
+              onClick={handleClickShowCurrentPassword}
+              edge="end"
+            >
+              {showCurrentPassword ? <VisibilityOff /> : <Visibility />}
+            </IconButton>
+          </InputAdornment>
+        }
+        placeholder="Current Password"
+        sx={{m:1, width:'90%', maxWidth:'500px'}}
+        onChange={(e) => {setCurrentPassword(e.target.value)}}
+        {...(errors.currentPassword && {error: true})}
+      />
+      <OutlinedInput
+        type={showPassword ? 'text' : 'password'}
+        endAdornment={
+          <InputAdornment position="end">
+            <IconButton
+              aria-label="toggle password visibility"
+              onClick={handleClickShowPassword}
+              edge="end"
+            >
+              {showPassword ? <VisibilityOff /> : <Visibility />}
+            </IconButton>
+          </InputAdornment>
+        }
+        placeholder="Password"
+        sx={{m:1, width:'90%', maxWidth:'500px'}}
+        onChange={(e) => {setPassword(e.target.value)}}
+        {...(errors.password && {error: true})}
+      />
+      <OutlinedInput
+        type={showConfirmPassword ? 'text' : 'password'}
+        endAdornment={
+          <InputAdornment position="end">
+            <IconButton
+              aria-label="toggle password visibility"
+              onClick={handleClickShowConfirmPassword}
+              edge="end"
+            >
+              {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+            </IconButton>
+          </InputAdornment>
+        }
+        placeholder="Confirm Password"
+        sx={{m:1, width:'90%', maxWidth:'500px'}}
+        onChange={(e) => {setConfirmPassword(e.target.value)}}
+        {...(errors.confirmPassword && {error: true})}
+      />
+      {errors.currentPassword && (
+        <FormHelperText error>{errors.currentPassword}</FormHelperText>
+      )}
+      {errors.password && (
+        <FormHelperText error>{errors.password}</FormHelperText>
+      )}
+      {errors.confirmPassword && (
+        <FormHelperText error>{errors.confirmPassword}</FormHelperText>
+      )}
+      <Button variant='contained' onClick={handleClick}>Change Password</Button>
       <Snackbar open={openError} autoHideDuration={3000} onClose={handleCloseError} anchorOrigin={{vertical: 'bottom', horizontal: 'center'}}>
         <Alert severity='error' onClose={handleCloseError}>{msg}</Alert>
       </Snackbar>
       <Snackbar open={openSuccess} autoHideDuration={3000} onClose={handleCloseSuccess} anchorOrigin={{vertical: 'bottom', horizontal: 'center'}}>
         <Alert severity='success' onClose={handleCloseError}>{msg}</Alert>
       </Snackbar>
-    </div>
+    </Box>
   )
 }
