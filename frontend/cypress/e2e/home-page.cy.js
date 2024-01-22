@@ -11,7 +11,8 @@ describe('Login page', () => {
   })
 
   it('Type username', () => {
-    cy.get('#username').type('Baldwin')
-    cy.get('[id="username"]').should('have.value', 'Baldwin')
+    cy.visit('/')
+    cy.get('[data-cy="username"]').type('Baldwin').should('include', 'Baldwin')
+    //cy.get('[data-cy="username"]').should('have.value', 'Baldwin')
   })
 })

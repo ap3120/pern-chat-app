@@ -89,7 +89,7 @@ export const LoginCard = () => {
       <Card sx={{display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'center', p:5, backgroundColor:'transparent', backdropFilter:'blur(20px)'}}>
         <ThemeToggle/>
         <TextField
-          id="username"
+          data-cy={`username`}
           label="Username"
           variant="outlined"
           sx={{m:1, width:'100%'}}
