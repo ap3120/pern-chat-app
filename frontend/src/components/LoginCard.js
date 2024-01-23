@@ -97,6 +97,7 @@ export const LoginCard = () => {
           {...(errors.username && {error: true, helperText: errors.username})}
         />
         <OutlinedInput
+          id="password"
           type={showPassword ? 'text' : 'password'}
           endAdornment={
             <InputAdornment position="end">
@@ -115,9 +116,9 @@ export const LoginCard = () => {
           {...(errors.password && {error: true})}
         />
         {errors.password && (
-          <FormHelperText error>{errors.password}</FormHelperText>
+          <FormHelperText id='helper-text' error>{errors.password}</FormHelperText>
         )}
-        <Button variant='contained' onClick={handleLogin}>Login</Button>
+        <Button id='login-btn' variant='contained' onClick={handleLogin}>Login</Button>
         <p>Don't have an account yet? <NavLink to='/register'>Register here</NavLink></p>
       </Card>
       <Snackbar open={openError} autoHideDuration={3000} onClose={handleCloseError} anchorOrigin={{vertical: 'bottom', horizontal: 'center'}}>
