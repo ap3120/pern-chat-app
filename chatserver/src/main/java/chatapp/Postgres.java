@@ -4,6 +4,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -111,6 +114,108 @@ public class Postgres {
         Statement statement;
         try {
             String query = String.format("select users.user_id, users.username from users join users_chats on users.user_id = users_chats.user_id where users_chats.chat_id = '&s' and users_chats.user_id != '%s';", chat_id, user_id);
+            statement = conn.createStatement();
+            ResultSet rs = statement.executeQuery(query);
+            JSONArray result = convertResultSetToJson(rs);
+            return result;
+        } catch(Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Adds a message
+     * @param conn
+     * @param content
+     * @param sender_id
+     * @param sender_username
+     * @param receiver_id
+     * @param receiver_username
+     * @param chat_id
+     * @param send_at
+     * @return the added message
+     */
+    public JSONArray addMessage(Connection conn, String content, int sender_id, int sender_username, int receiver_id, String receiver_username, int chat_id, LocalDateTime send_at) {
+        Statement statement;
+        try {
+            String query = String.format("insert into messages (content, sender_id, sender_username, receiver_id, receiver_username, chat_id, send_at) values('%s', '%s', '%s', '%s', '%s', '%s', '%s') returning *;",
+                    content, sender_id, sender_username, receiver_id, receiver_username, chat_id, send_at
+            );
+            statement = conn.createStatement();
+            ResultSet rs = statement.executeQuery(query);
+            JSONArray result = convertResultSetToJson(rs);
+            return result;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Gets messages from a chat
+     * @param conn
+     * @param chat_id
+     * @return all messages from a chat
+     */
+    public JSONArray getMessagesFromChat(Connection conn, int chat_id) {
+        Statement statement;
+        try {
+            String query = String.format("select * from messages where chat_id = '%s' order by send_at", chat_id);
+            statement = conn.createStatement();
+            ResultSet rs = statement.executeQuery(query);
+            JSONArray result = convertResultSetToJson(rs);
+            return result;
+        } catch(Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Checks if a user exists
+     * @param conn
+     * @param username
+     * @return
+     */
+    public boolean userExists(Connection conn, String username) {
+        Statement statement;
+        try {
+            String query = String.format("select * from users where username = '%s';", username);
+            statement = conn.createStatement();
+            ResultSet rs = statement.executeQuery(query);
+            if (rs.next()) {return true;}
+            return false;
+        } catch(Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Adds a user
+     * @param conn
+     * @param username
+     * @param password
+     * @return the added user
+     */
+    public JSONArray addUser(Connection conn, String username, String password) {
+        Statement statement;
+        try {
+            if (userExists(conn, username)) {
+                JSONArray result = new JSONArray();
+                JSONObject msg = new JSONObject();
+                msg.put("msg", "User " + username + " already exists.");
+                result.put(msg);
+                return result;
+            }
+            // hashing the password
+            SecureRandom secureRandom = new SecureRandom();
+            byte[] salt = new byte[16];
+            secureRandom.nextBytes(salt);
+            MessageDigest md = MessageDigest.getInstance("SHA-512");
+            md.update(salt);
+            byte[] hashedPassword = md.digest(password.getBytes(StandardCharsets.UTF_8));
+            String hashedPasswordToString = new String(hashedPassword);
+
+            String query = String.format("insert into users (username, password) values ('%s', '%s') returning *;", username, hashedPasswordToString);
             statement = conn.createStatement();
             ResultSet rs = statement.executeQuery(query);
             JSONArray result = convertResultSetToJson(rs);

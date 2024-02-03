@@ -22,11 +22,9 @@ public class App
         String password = dotenv.get("DB_PASSWORD");
         Postgres postgres = new Postgres();
         Connection connection = postgres.connectToDatabase(dbname, user, password);
-        LocalDateTime created_at = LocalDate.of(2024, 1, 30).atStartOfDay();
-        JSONArray result = postgres.addToChats(connection, 6, created_at);
-        printJsonArray(result);
-        JSONArray res = postgres.readFromChats(connection, 1);
-        printJsonArray(res);
+
+        boolean userExists = postgres.userExists(connection, "Alice");
+        System.out.println(userExists);
     }
 
     private static void printJsonArray(JSONArray jsonArray) {
