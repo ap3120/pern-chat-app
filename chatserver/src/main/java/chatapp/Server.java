@@ -16,8 +16,7 @@ public class Server {
         String dbname = dotenv.get("DB_NAME");
         String user = dotenv.get("DB_USER");
         String password = dotenv.get("DB_PASSWORD");
-        Postgres postgres = new Postgres();
-        Connection connection = postgres.connectToDatabase(dbname, user, password);
+        Connection connection = Postgres.connectToDatabase(dbname, user, password);
 
         try {
             HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);

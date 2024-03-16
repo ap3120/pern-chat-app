@@ -9,6 +9,7 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.sql.*;
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -21,7 +22,7 @@ public class Postgres {
      * @param password
      * @return
      */
-    public Connection connectToDatabase(String dbname, String user, String password) {
+    public static Connection connectToDatabase(String dbname, String user, String password) {
         Connection connection = null;
         try {
             Class.forName("org.postgresql.Driver");
@@ -40,7 +41,7 @@ public class Postgres {
      * @param created_at
      * @return added chat to json
      */
-    public JSONArray addToChats(Connection conn, int created_by, LocalDateTime created_at) {
+    public static JSONArray addToChats(Connection conn, int created_by, LocalDateTime created_at) {
         Statement statement;
         try {
             String query = String.format("insert into chats (created_by, created_at) values ('%s', '%s') returning *;", created_by, created_at);
@@ -69,7 +70,7 @@ public class Postgres {
      * @param chat_id
      * @return added row
      */
-    public JSONArray addToUsersChats(Connection conn, int user_id, int chat_id) {
+    public static JSONArray addToUsersChats(Connection conn, int user_id, int chat_id) {
         Statement statement;
         try {
             String query = String.format("insert into users_chats (user_id, chat_id) values ('%s', '%s') returning *;", user_id, chat_id);
@@ -89,7 +90,7 @@ public class Postgres {
      * @param id
      * @return elements from chats table
      */
-    public JSONArray readFromChats(Connection conn, int id) {
+    public static JSONArray readFromChats(Connection conn, int id) {
         Statement statement;
         try {
             String query = String.format("select * from chats join users_chats on chats.chat_id = users_chats.chat_id where users_chats.user_id = '%s';", id);
@@ -110,7 +111,7 @@ public class Postgres {
      * @param user_id
      * @return user
      */
-    public JSONArray getUser(Connection conn, int chat_id, int user_id) {
+    public static JSONArray getUser(Connection conn, int chat_id, int user_id) {
         Statement statement;
         try {
             String query = String.format("select users.user_id, users.username from users join users_chats on users.user_id = users_chats.user_id where users_chats.chat_id = '&s' and users_chats.user_id != '%s';", chat_id, user_id);
@@ -135,7 +136,7 @@ public class Postgres {
      * @param send_at
      * @return the added message
      */
-    public JSONArray addMessage(Connection conn, String content, int sender_id, int sender_username, int receiver_id, String receiver_username, int chat_id, LocalDateTime send_at) {
+    public static JSONArray addMessage(Connection conn, String content, int sender_id, int sender_username, int receiver_id, String receiver_username, int chat_id, LocalDateTime send_at) {
         Statement statement;
         try {
             String query = String.format("insert into messages (content, sender_id, sender_username, receiver_id, receiver_username, chat_id, send_at) values('%s', '%s', '%s', '%s', '%s', '%s', '%s') returning *;",
@@ -156,7 +157,7 @@ public class Postgres {
      * @param chat_id
      * @return all messages from a chat
      */
-    public JSONArray getMessagesFromChat(Connection conn, int chat_id) {
+    public static JSONArray getMessagesFromChat(Connection conn, int chat_id) {
         Statement statement;
         try {
             String query = String.format("select * from messages where chat_id = '%s' order by send_at", chat_id);
@@ -175,7 +176,7 @@ public class Postgres {
      * @param username
      * @return
      */
-    public boolean userExists(Connection conn, String username) {
+    public static boolean userExists(Connection conn, String username) {
         Statement statement;
         try {
             String query = String.format("select * from users where username = '%s';", username);
@@ -196,15 +197,13 @@ public class Postgres {
      * @param password
      * @return the added user
      */
-    public JSONArray addUser(Connection conn, String username, String password) {
+    public static JSONObject addUser(Connection conn, String username, String password) {
         Statement statement;
         try {
             if (userExists(conn, username)) {
-                JSONArray result = new JSONArray();
                 JSONObject msg = new JSONObject();
                 msg.put("msg", "User " + username + " already exists.");
-                result.put(msg);
-                return result;
+                return msg;
             }
             // hashing the password
             SecureRandom secureRandom = new SecureRandom();
@@ -213,12 +212,12 @@ public class Postgres {
             MessageDigest md = MessageDigest.getInstance("SHA-512");
             md.update(salt);
             byte[] hashedPassword = md.digest(password.getBytes(StandardCharsets.UTF_8));
-            String hashedPasswordToString = new String(hashedPassword);
-
+            String hashedPasswordToString = Base64.getEncoder().encodeToString(hashedPassword);
             String query = String.format("insert into users (username, password) values ('%s', '%s') returning *;", username, hashedPasswordToString);
             statement = conn.createStatement();
             ResultSet rs = statement.executeQuery(query);
-            JSONArray result = convertResultSetToJson(rs);
+            JSONObject result = convertResultSetToJson(rs).getJSONObject(0);
+            result.remove("password");
             return result;
         } catch(Exception e) {
             return null;
@@ -230,7 +229,7 @@ public class Postgres {
      * @param rs
      * @return json array of result set
      */
-    private JSONArray convertResultSetToJson(ResultSet rs) {
+    private static JSONArray convertResultSetToJson(ResultSet rs) {
         try {
             ResultSetMetaData md = rs.getMetaData();
             int numCols = md.getColumnCount();

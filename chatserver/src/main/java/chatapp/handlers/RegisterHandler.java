@@ -1,7 +1,9 @@
 package chatapp.handlers;
 
+import chatapp.Postgres;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -27,8 +29,10 @@ public class RegisterHandler implements HttpHandler {
             }
             bufferedReader.close();
             requestBodyReader.close();
-            
-            String response = requestBody.toString();
+            String body = requestBody.toString();
+            JSONObject jsonBody = new JSONObject(body);
+            JSONObject jsonResponse = Postgres.addUser(connection, (String) jsonBody.get("username"), (String) jsonBody.get("password"));
+            String response = jsonResponse.toString();
             httpExchange.sendResponseHeaders(200, response.length());
             OutputStream outputStreamResponse = httpExchange.getResponseBody();
             outputStreamResponse.write(response.getBytes());
