@@ -6,7 +6,6 @@ import org.json.JSONObject;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.security.SecureRandom;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.Base64;
@@ -200,26 +199,47 @@ public class Postgres {
     public static JSONObject addUser(Connection conn, String username, String password) {
         Statement statement;
         try {
-            if (userExists(conn, username)) {
-                JSONObject msg = new JSONObject();
-                msg.put("msg", "User " + username + " already exists.");
-                return msg;
-            }
-            // hashing the password
-            SecureRandom secureRandom = new SecureRandom();
-            byte[] salt = new byte[16];
-            secureRandom.nextBytes(salt);
-            MessageDigest md = MessageDigest.getInstance("SHA-512");
-            md.update(salt);
-            byte[] hashedPassword = md.digest(password.getBytes(StandardCharsets.UTF_8));
-            String hashedPasswordToString = Base64.getEncoder().encodeToString(hashedPassword);
-            String query = String.format("insert into users (username, password) values ('%s', '%s') returning *;", username, hashedPasswordToString);
+            if (userExists(conn, username)) return infoMessage("User " + username + " already exists.");
+            String hashedPassword = hash(password);
+            String query = String.format("insert into users (username, password) values ('%s', '%s') returning *;", username, hashedPassword);
             statement = conn.createStatement();
             ResultSet rs = statement.executeQuery(query);
             JSONObject result = convertResultSetToJson(rs).getJSONObject(0);
             result.remove("password");
             return result;
         } catch(Exception e) {
+            return infoMessage("Something went wrong with the server.");
+        }
+    }
+
+    public static JSONObject login(Connection conn, String username, String password) {
+        Statement statement;
+        try {
+            if (!userExists(conn, username)) return infoMessage("User " + username + " doesn't exist.");
+            String query = String.format("select password from users where username = '%s';", username);
+            statement = conn.createStatement();
+            ResultSet rs = statement.executeQuery(query);
+            JSONObject result = convertResultSetToJson(rs).getJSONObject(0);
+            String dbPassword = result.getString("password");
+            if (dbPassword.equals(hash(password))) return infoMessage(username + " successfully connected.");
+            return infoMessage("Wrong password for " + username);
+        } catch(Exception e) {
+            return infoMessage("Something went wrong with the server.");
+        }
+    }
+
+    private static JSONObject infoMessage(String msg) {
+        JSONObject error = new JSONObject();
+        error.put("msg", msg);
+        return error;
+    }
+
+    private static String hash(String password) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-512");
+            byte[] hashedPassword = md.digest(password.getBytes(StandardCharsets.UTF_8));
+            return Base64.getEncoder().encodeToString(hashedPassword);
+        } catch (Exception e) {
             return null;
         }
     }

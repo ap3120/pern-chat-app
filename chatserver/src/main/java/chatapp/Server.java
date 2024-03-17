@@ -1,5 +1,6 @@
 package chatapp;
 
+import chatapp.handlers.LoginHandler;
 import chatapp.handlers.RegisterHandler;
 import chatapp.handlers.TestHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -23,6 +24,7 @@ public class Server {
             System.out.println("server started at " + port);
             server.createContext("/test", new TestHandler());
             server.createContext("/register", new RegisterHandler(connection));
+            server.createContext("/login", new LoginHandler(connection));
             server.setExecutor(null);
             server.start();
         } catch (IOException e) {
