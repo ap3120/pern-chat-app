@@ -25,7 +25,7 @@ public class Server {
             server.createContext("/login", new LoginHandler(connection));
             server.createContext("/logout", new LogoutHandler(connection));
             server.createContext("/chat", new ChatHandler(connection));
-            server.createContext("/message", new ChatHandler(connection));
+            server.createContext("/message", new MessageHandler(connection));
             server.setExecutor(null);
             server.start();
         } catch (IOException e) {

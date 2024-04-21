@@ -11,6 +11,8 @@ export const Contacts = ({setContact}) => {
   const [chats, setChats] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
+  const PORT = process.env.REACT_APP_PORT;
+
   const getStyle = i => {
     return [
       {
@@ -30,7 +32,7 @@ export const Contacts = ({setContact}) => {
 
   const getChats = async() => {
     try {
-      const response = await fetch(`http://localhost:3000/chat/${sessionStorage.getItem('user_id')}`);
+      const response = await fetch(`http://localhost:${PORT}/chat/${sessionStorage.getItem('user_id')}`);
       const jsonResponse = await response.json();
       console.log(jsonResponse);
       setChats(jsonResponse);
@@ -44,7 +46,7 @@ export const Contacts = ({setContact}) => {
 
   const getChatContact = async(chat_id) => {
     try {
-      const response = await fetch(`http://localhost:3000/chat/users_chats/${chat_id}/${sessionStorage.getItem("user_id")}`)
+      const response = await fetch(`http://localhost:${PORT}/chat/users_chats/${chat_id}/${sessionStorage.getItem("user_id")}`)
       const jsonResponse = await response.json();
       console.log(jsonResponse);
       setChats(prevChats => prevChats.map(elem => (elem.chat_id === chat_id ? {...elem, chat_contact: jsonResponse.username, chat_contact_id: jsonResponse.user_id} : elem)))

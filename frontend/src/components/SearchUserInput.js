@@ -3,6 +3,7 @@ import {useState} from 'react';
 export const SearchUserInput = ({users, setChats, setFilteringUsers}) => {
 
   const [value, setValue] = useState('');
+  const PORT = process.env.REACT_APP_PORT;
 
   const arr = users.map(elem => elem.username);
 
@@ -11,7 +12,7 @@ export const SearchUserInput = ({users, setChats, setFilteringUsers}) => {
     if (index === -1) {return;}
     setValue(v);
     try {
-    const response = await fetch('http://localhost:3000/chat', {
+    const response = await fetch(`http://localhost:${PORT}/chat`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
@@ -21,7 +22,7 @@ export const SearchUserInput = ({users, setChats, setFilteringUsers}) => {
     })
     const jsonResponse = await response.json();
       const user_id = users[index].user_id;
-      const resp = await fetch('http://localhost:3000/chat/users_chats', {
+      const resp = await fetch(`http://localhost:${PORT}/chat/users_chats`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({

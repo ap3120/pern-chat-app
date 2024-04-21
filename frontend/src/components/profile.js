@@ -22,6 +22,7 @@ export const Profile = () => {
   const [errors, setErrors] = useState({});
 
   const navigate = useNavigate();
+  const PORT = process.env.REACT_APP_PORT;
 
   const validate = () => {
     let tmp = {};
@@ -59,7 +60,7 @@ export const Profile = () => {
   const handleClick = async() => {
     if (!validate()) return;
     try {
-      const response = await fetch(`http://localhost:3000/users/${sessionStorage.getItem('user_id')}`, {
+      const response = await fetch(`http://localhost:${PORT}/users/${sessionStorage.getItem('user_id')}`, {
         method: 'PUT',
         body: JSON.stringify({
           currentPassword: currentPassword,

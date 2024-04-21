@@ -13,9 +13,11 @@ export const Navbar = ({setFilteringUsers, setUsers}) => {
 
   const navigate = useNavigate();
 
+  const PORT = process.env.REACT_APP_PORT;
+
   const handleClick = async() => {
     setFilteringUsers(true);
-    const response = await fetch('http://localhost:3000/users');
+    const response = await fetch(`http://localhost:${PORT}/users`);
     const jsonResponse = await response.json();
     setUsers(jsonResponse);
   }
@@ -31,7 +33,7 @@ export const Navbar = ({setFilteringUsers, setUsers}) => {
   const handleLogout = async() => {
     setAnchorEl(null);
     try {
-      const response = await fetch('http://localhost:3000/logout');
+      const response = await fetch(`http://localhost:${PORT}/logout`);
       const jsonResponse = await response.json();
       if (jsonResponse.msg === "Successfully logged out.") {
         sessionStorage.setItem('user_id', '');

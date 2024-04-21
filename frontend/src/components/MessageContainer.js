@@ -18,9 +18,11 @@ export const MessageContainer = ({contact, messages, setMessages}) => {
       color: msg.sender_id == sessionStorage.getItem('user_id') ? 'primary.contrastText' : 'secondary.contrastText',
     }
   }
+
+  const PORT = process.env.REACT_APP_PORT;
   const getMessages = async() => {
     try {
-      const response = await fetch(`http://localhost:3000/message/${contact.chat_id}`);
+      const response = await fetch(`http://localhost:${PORT}/message/${contact.chat_id}`);
       const jsonResponse = await response.json();
       setMessages(jsonResponse);
     } catch (error) {

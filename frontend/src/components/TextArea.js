@@ -21,12 +21,13 @@ outline: 0;
 export const TextArea = ({inputRef, contact, setMessages}) => {
 
   const [message, setMessage] = useState('');
+  const PORT = process.env.REACT_APP_PORT;
 
   const handleClick = async() => {
     const msg = message.replace(/[\n]/g, '<br />');
     console.log(msg);
     try {
-      const response = await fetch('http://localhost:3000/message', {
+      const response = await fetch(`http://localhost:${PORT}/message`, {
         method: 'POST',
         body: JSON.stringify({
           content: msg,

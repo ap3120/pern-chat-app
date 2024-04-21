@@ -24,8 +24,8 @@ export const RegisterCard = () => {
   const [msg, setMsg] = useState('');
 
   const dark = useTheme();
-
-  const ENDPOINT = 'http://localhost:3000';
+  const PORT = process.env.REACT_APP_PORT;
+  const ENDPOINT = `http://localhost:${PORT}`;
 
   const handleClickShowPassword = () => setShowPassword((show) => !show);
   const handleClickShowConfirmationPassword = () => setShowConfirmationPassword((show) => !show);
