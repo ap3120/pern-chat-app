@@ -40,7 +40,7 @@ public class Postgres {
      * @param created_at
      * @return added chat to json
      */
-    public static JSONArray addToChats(Connection conn, int created_by, LocalDateTime created_at) {
+    public static JSONObject addToChats(Connection conn, int created_by, LocalDateTime created_at) {
         Statement statement;
         try {
             String query = String.format("insert into chats (created_by, created_at) values ('%s', '%s') returning *;", created_by, created_at);
@@ -55,7 +55,7 @@ public class Postgres {
             rs.beforeFirst();
 
             JSONArray result = convertResultSetToJson(rs);
-            return result;
+            return (JSONObject) result.get(0);
         } catch(Exception e) {
             e.printStackTrace();
             return null;
@@ -69,14 +69,14 @@ public class Postgres {
      * @param chat_id
      * @return added row
      */
-    public static JSONArray addToUsersChats(Connection conn, int user_id, int chat_id) {
+    public static JSONObject addToUsersChats(Connection conn, int user_id, int chat_id) {
         Statement statement;
         try {
             String query = String.format("insert into users_chats (user_id, chat_id) values ('%s', '%s') returning *;", user_id, chat_id);
             statement = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
             ResultSet rs = statement.executeQuery(query);
             JSONArray result = convertResultSetToJson(rs);
-            return result;
+            return (JSONObject) result.get(0);
         } catch(Exception e) {
             e.printStackTrace();
             return null;
@@ -110,14 +110,14 @@ public class Postgres {
      * @param user_id
      * @return user
      */
-    public static JSONArray getUser(Connection conn, int chat_id, int user_id) {
+    public static JSONObject getUser(Connection conn, int chat_id, int user_id) {
         Statement statement;
         try {
             String query = String.format("select users.user_id, users.username from users join users_chats on users.user_id = users_chats.user_id where users_chats.chat_id = '&s' and users_chats.user_id != '%s';", chat_id, user_id);
             statement = conn.createStatement();
             ResultSet rs = statement.executeQuery(query);
             JSONArray result = convertResultSetToJson(rs);
-            return result;
+            return (JSONObject) result.get(0);
         } catch(Exception e) {
             return null;
         }
@@ -135,7 +135,7 @@ public class Postgres {
      * @param send_at
      * @return the added message
      */
-    public static JSONArray addMessage(Connection conn, String content, int sender_id, int sender_username, int receiver_id, String receiver_username, int chat_id, LocalDateTime send_at) {
+    public static JSONObject addMessage(Connection conn, String content, int sender_id, String sender_username, int receiver_id, String receiver_username, int chat_id, LocalDateTime send_at) {
         Statement statement;
         try {
             String query = String.format("insert into messages (content, sender_id, sender_username, receiver_id, receiver_username, chat_id, send_at) values('%s', '%s', '%s', '%s', '%s', '%s', '%s') returning *;",
@@ -144,7 +144,7 @@ public class Postgres {
             statement = conn.createStatement();
             ResultSet rs = statement.executeQuery(query);
             JSONArray result = convertResultSetToJson(rs);
-            return result;
+            return (JSONObject) result.get(0);
         } catch (Exception e) {
             return null;
         }

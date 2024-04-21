@@ -1,8 +1,6 @@
 package chatapp;
 
-import chatapp.handlers.LoginHandler;
-import chatapp.handlers.RegisterHandler;
-import chatapp.handlers.TestHandler;
+import chatapp.handlers.*;
 import com.sun.net.httpserver.HttpServer;
 import io.github.cdimascio.dotenv.Dotenv;
 
@@ -25,6 +23,9 @@ public class Server {
             server.createContext("/test", new TestHandler());
             server.createContext("/register", new RegisterHandler(connection));
             server.createContext("/login", new LoginHandler(connection));
+            server.createContext("/logout", new LogoutHandler(connection));
+            server.createContext("/chat", new ChatHandler(connection));
+            server.createContext("/message", new ChatHandler(connection));
             server.setExecutor(null);
             server.start();
         } catch (IOException e) {
