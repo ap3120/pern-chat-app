@@ -8,14 +8,13 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.sql.*;
 import java.time.LocalDateTime;
-import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class Postgres {
     /**
-     * Connects to the database
+     * Connect to the database
      * @param dbname
      * @param user
      * @param password
@@ -34,7 +33,7 @@ public class Postgres {
     }
 
     /**
-     * Adds a chat
+     * Add a chat
      * @param conn
      * @param created_by
      * @param created_at
@@ -63,7 +62,7 @@ public class Postgres {
     }
 
     /**
-     * Adds to users_chats table
+     * Add to users_chats table
      * @param conn
      * @param user_id
      * @param chat_id
@@ -84,7 +83,7 @@ public class Postgres {
     }
 
     /**
-     * Reads from chats
+     * Read from chats
      * @param conn
      * @param id
      * @return elements from chats table
@@ -104,7 +103,7 @@ public class Postgres {
     }
 
     /**
-     * Gets user from a chat
+     * Get user from a chat
      * @param conn
      * @param chat_id
      * @param user_id
@@ -124,7 +123,80 @@ public class Postgres {
     }
 
     /**
-     * Adds a message
+     * Get all users
+     * @param conn
+     * @return all users
+     */
+    public static JSONArray getUsers(Connection conn) {
+        Statement statement;
+        try {
+            String query = String.format("Select user_id, username from users order by user_id asc;");
+            statement = conn.createStatement();
+            ResultSet rs = statement.executeQuery(query);
+            JSONArray result = convertResultSetToJson(rs);
+            return result;
+        } catch(Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * Update a user
+     * @param conn
+     * @param user_id
+     * @param prevPasswordToCheck
+     * @param newPassword
+     * @return info message
+     */
+    public static JSONObject updateUser(Connection conn, int user_id, String prevPasswordToCheck, String newPassword) {
+        Statement statement;
+        try {
+            String query = String.format("Select password from users where user_id = '%s'", user_id);
+            statement = conn.createStatement();
+            ResultSet rs = statement.executeQuery(query);
+            JSONObject result = convertResultSetToJson(rs).getJSONObject(0);
+            if (result == null) {
+                return infoMessage("User of user_id " + user_id + " doesn't exist.");
+            }
+            if (result.get("password").equals(hash(prevPasswordToCheck))) {
+                String hashedNewPassword = hash(newPassword);
+                String newQuery = String.format("update users set password = '%s' where user_id = '%s'", hashedNewPassword, user_id);
+                Statement newStatement = conn.createStatement();
+                ResultSet newRs = newStatement.executeQuery(newQuery);
+                if (newRs != null) return infoMessage("Password successfully updated");
+                return infoMessage("Something went wrong, password couldn't be updated.");
+            } else {
+                return infoMessage("Incorrect password.");
+            }
+        } catch(Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * Delete a user
+     * @param conn
+     * @param user_id
+     * @return info message
+     */
+    public static JSONObject deleteUser(Connection conn, int user_id) {
+        Statement statement;
+        try {
+            String query = String.format("delete from users where user_id = '%s'", user_id);
+            statement = conn.createStatement();
+            ResultSet rs = statement.executeQuery(query);
+            if (rs != null) return infoMessage("User successfully deleted.");
+            return infoMessage("Something went wrong...");
+        } catch(Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * Add a message
      * @param conn
      * @param content
      * @param sender_id
@@ -151,7 +223,7 @@ public class Postgres {
     }
 
     /**
-     * Gets messages from a chat
+     * Get messages from a chat
      * @param conn
      * @param chat_id
      * @return all messages from a chat
@@ -170,7 +242,7 @@ public class Postgres {
     }
 
     /**
-     * Checks if a user exists
+     * Check if a user exists
      * @param conn
      * @param username
      * @return
@@ -190,7 +262,7 @@ public class Postgres {
     }
 
     /**
-     * Adds a user
+     * Add a user
      * @param conn
      * @param username
      * @param password
@@ -216,12 +288,15 @@ public class Postgres {
         Statement statement;
         try {
             if (!userExists(conn, username)) return infoMessage("User " + username + " doesn't exist.");
-            String query = String.format("select password from users where username = '%s';", username);
+            String query = String.format("select * from users where username = '%s';", username);
             statement = conn.createStatement();
             ResultSet rs = statement.executeQuery(query);
             JSONObject result = convertResultSetToJson(rs).getJSONObject(0);
             String dbPassword = result.getString("password");
-            if (dbPassword.equals(hash(password))) return infoMessage(username + " successfully connected.");
+            if (dbPassword.equals(hash(password))) {
+                result.remove("password");
+                return result;
+            }
             return infoMessage("Wrong password for " + username);
         } catch(Exception e) {
             return infoMessage("Something went wrong with the server.");
@@ -237,15 +312,19 @@ public class Postgres {
     private static String hash(String password) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-512");
-            byte[] hashedPassword = md.digest(password.getBytes(StandardCharsets.UTF_8));
-            return Base64.getEncoder().encodeToString(hashedPassword);
+            byte[] bytePassword = md.digest(password.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hashedPassword = new StringBuilder();
+            for (byte b : bytePassword) {
+                hashedPassword.append(String.format("%02x", b));
+            }
+            return hashedPassword.toString();
         } catch (Exception e) {
             return null;
         }
     }
 
     /**
-     * Converts a result set to a json array
+     * Convert a result set to a json array
      * @param rs
      * @return json array of result set
      */

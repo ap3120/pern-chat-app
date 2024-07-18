@@ -20,12 +20,13 @@ public class Server {
         try {
             HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
             System.out.println("server started at " + port);
-            server.createContext("/test", new TestHandler());
             server.createContext("/register", new RegisterHandler(connection));
             server.createContext("/login", new LoginHandler(connection));
             server.createContext("/logout", new LogoutHandler(connection));
             server.createContext("/chat", new ChatHandler(connection));
             server.createContext("/message", new MessageHandler(connection));
+            server.createContext("/users", new UserHandler(connection));
+            server.createContext("/dummy", new TestHandler(connection));
             server.setExecutor(null);
             server.start();
         } catch (IOException e) {

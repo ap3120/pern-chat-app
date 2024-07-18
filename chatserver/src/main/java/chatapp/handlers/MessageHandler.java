@@ -20,11 +20,12 @@ public class MessageHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange httpExchange) throws IOException {
         String path = httpExchange.getRequestURI().getPath();
-        System.out.println(path);
         String[] arrayPath = path.split("/");
-        System.out.println(Arrays.toString(arrayPath));
         String response = null;
-        if (arrayPath.length == 1) {
+
+        if (httpExchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
+            OptionRequestHandler.handle(httpExchange);
+        } else if (arrayPath.length == 1) {
             if (httpExchange.getRequestMethod().equalsIgnoreCase("POST")) {
                 InputStreamReader requestBodyReader = new InputStreamReader(httpExchange.getRequestBody(), "utf-8");
                 BufferedReader bufferedReader = new BufferedReader(requestBodyReader);
@@ -54,6 +55,7 @@ public class MessageHandler implements HttpHandler {
             }
         }
         if (response != null) {
+            httpExchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
             httpExchange.sendResponseHeaders(200, response.length());
             OutputStream outputStream = httpExchange.getResponseBody();
             outputStream.write(response.getBytes());

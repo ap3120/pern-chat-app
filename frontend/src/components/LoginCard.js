@@ -48,21 +48,44 @@ export const LoginCard = () => {
           "Content-Type": "application/json"
         }
       });
-      if (!response.ok) {
-        setErrors({username: 'Invalid credentials', password: 'Invalid credentials'});
-        return;
+      console.log(response);
+      if (response.ok) {
+        const jsonResponse = await response.json();
+        if (jsonResponse.msg) {
+          if (jsonResponse.msg === `User ${username} doesn't exist.`) setErrors(prevErrors => ({...prevErrors, username: jsonResponse.msg}));
+          if (jsonResponse.msg === `Wrong password for ${username}`) setErrors(prevErrors => ({...prevErrors, password: jsonResponse.msg}));
+        } else {
+          sessionStorage.setItem('user_id', jsonResponse.user_id);
+          sessionStorage.setItem('username', jsonResponse.username);
+          navigate('/dashboard');
+        }
+      } else {
+        setMsg("Couldn't connect to server...");
+        setOpenError(true);
       }
-      const jsonResponse = await response.json();
-      console.log(jsonResponse)
-      sessionStorage.setItem('user_id', jsonResponse.user.user_id);
-      sessionStorage.setItem('username', jsonResponse.user.username)
-      navigate('/dashboard');
     } catch (error) {
       console.log(error);
       setMsg("Couldn't connect to server...");
       setOpenError(true);
     }
   }
+  /*const handleDummy = async() => {
+    try {
+      const response = await fetch(`${ENDPOINT}/dummy`, {
+        method: 'POST',
+        body: JSON.stringify({
+          msg: "Some message haha!"
+        }),
+        headers: {"Content-Type": "application/json"}
+      });
+      if (response.ok) {
+        const jsonResponse = await response.json();
+        console.log(jsonResponse);
+      }
+    } catch(error) {
+      console.log(error);
+    }
+  }*/
 
   const handleCloseError = (event, reason) => {
     if (reason === 'clickaway') {

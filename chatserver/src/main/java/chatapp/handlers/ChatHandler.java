@@ -20,11 +20,11 @@ public class ChatHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange httpExchange) throws IOException {
         String path = httpExchange.getRequestURI().getPath();
-        System.out.println(path);
         String[] arrayPath = path.split("/");
-        System.out.println(Arrays.toString(arrayPath));
         String response = null;
-        if (arrayPath.length == 1) {
+        if (httpExchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
+            OptionRequestHandler.handle(httpExchange);
+        } else if (arrayPath.length == 2) {
             if (httpExchange.getRequestMethod().equalsIgnoreCase("POST")) {
                 InputStreamReader requestBodyReader = new InputStreamReader(httpExchange.getRequestBody(), "utf-8");
                 BufferedReader bufferedReader = new BufferedReader(requestBodyReader);
@@ -40,7 +40,7 @@ public class ChatHandler implements HttpHandler {
                 JSONObject jsonResponse = Postgres.addToChats(connection, (int) jsonBody.get("created_by"), (LocalDateTime) jsonBody.get("created_at"));
                 response = jsonResponse.toString();
             }
-        } else if ((arrayPath.length == 3) && arrayPath[2].equals("users_chats")) {
+        } else if ((arrayPath.length == 3)) {
             if (httpExchange.getRequestMethod().equalsIgnoreCase("POST")) {
                 InputStreamReader requestBodyReader = new InputStreamReader(httpExchange.getRequestBody(), "utf-8");
                 BufferedReader bufferedReader = new BufferedReader(requestBodyReader);
@@ -55,10 +55,8 @@ public class ChatHandler implements HttpHandler {
                 JSONObject jsonBody = new JSONObject(body);
                 JSONObject jsonResponse = Postgres.addToUsersChats(connection, (int) jsonBody.get("user_id"), (int) jsonBody.get("chat_id"));
                 response = jsonResponse.toString();
-            }
-        } else if (arrayPath.length == 2) {
-            if (httpExchange.getRequestMethod().equalsIgnoreCase("GET")) {
-                JSONArray jsonResponse = Postgres.readFromChats(connection, Integer.parseInt(arrayPath[1]));
+            } else if (httpExchange.getRequestMethod().equalsIgnoreCase("GET")){
+                JSONArray jsonResponse = Postgres.readFromChats(connection, Integer.parseInt(arrayPath[2]));
                 response = jsonResponse.toString();
             }
         } else if (arrayPath.length == 4) {
@@ -68,6 +66,7 @@ public class ChatHandler implements HttpHandler {
             }
         }
         if (response != null) {
+            httpExchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
             httpExchange.sendResponseHeaders(200, response.length());
             OutputStream outputStream = httpExchange.getResponseBody();
             outputStream.write(response.getBytes());

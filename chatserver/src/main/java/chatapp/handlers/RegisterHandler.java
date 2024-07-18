@@ -19,7 +19,9 @@ public class RegisterHandler implements HttpHandler {
     }
     @Override
     public void handle(HttpExchange httpExchange) throws IOException {
-        if (httpExchange.getRequestMethod().equalsIgnoreCase("POST")) {
+        if (httpExchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
+            OptionRequestHandler.handle(httpExchange);
+        } else if (httpExchange.getRequestMethod().equalsIgnoreCase("POST")) {
             InputStreamReader requestBodyReader = new InputStreamReader(httpExchange.getRequestBody(), "utf-8");
             BufferedReader bufferedReader = new BufferedReader(requestBodyReader);
             StringBuilder requestBody = new StringBuilder();
@@ -33,6 +35,7 @@ public class RegisterHandler implements HttpHandler {
             JSONObject jsonBody = new JSONObject(body);
             JSONObject jsonResponse = Postgres.addUser(connection, (String) jsonBody.get("username"), (String) jsonBody.get("password"));
             String response = jsonResponse.toString();
+            httpExchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
             httpExchange.sendResponseHeaders(200, response.length());
             OutputStream outputStreamResponse = httpExchange.getResponseBody();
             outputStreamResponse.write(response.getBytes());

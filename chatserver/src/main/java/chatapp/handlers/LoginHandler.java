@@ -17,7 +17,9 @@ public class LoginHandler implements HttpHandler {
     public LoginHandler(Connection connection) {this.connection = connection;}
     @Override
     public void handle(HttpExchange httpExchange) throws IOException {
-        if (httpExchange.getRequestMethod().equalsIgnoreCase("POST")) {
+        if (httpExchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
+            OptionRequestHandler.handle(httpExchange);
+        } else if (httpExchange.getRequestMethod().equalsIgnoreCase("POST")) {
             InputStreamReader requestBodyReader = new InputStreamReader(httpExchange.getRequestBody(), "utf-8");
             BufferedReader bufferedReader = new BufferedReader(requestBodyReader);
             StringBuilder requestBody = new StringBuilder();
@@ -37,7 +39,7 @@ public class LoginHandler implements HttpHandler {
             sessionCookie.setPath("/");
             sessionCookie.setMaxAge(3600);
             httpExchange.getResponseHeaders().add("Set-Cookie", sessionCookie.toString());
-
+            httpExchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
             httpExchange.sendResponseHeaders(200, response.length());
             OutputStream outputStreamResponse = httpExchange.getResponseBody();
             outputStreamResponse.write(response.getBytes());
