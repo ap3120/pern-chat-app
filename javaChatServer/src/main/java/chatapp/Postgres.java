@@ -36,12 +36,12 @@ public class Postgres {
      * Add a chat
      * @param conn
      * @param created_by
-     * @param created_at
      * @return added chat to json
      */
-    public static JSONObject addToChats(Connection conn, int created_by, LocalDateTime created_at) {
+    public static JSONObject addToChat(Connection conn, int created_by) {
         Statement statement;
         try {
+            LocalDateTime created_at = LocalDateTime.now();
             String query = String.format("insert into chats (created_by, created_at) values ('%s', '%s') returning *;", created_by, created_at);
             statement = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
             ResultSet rs = statement.executeQuery(query);
@@ -112,7 +112,7 @@ public class Postgres {
     public static JSONObject getUser(Connection conn, int chat_id, int user_id) {
         Statement statement;
         try {
-            String query = String.format("select users.user_id, users.username from users join users_chats on users.user_id = users_chats.user_id where users_chats.chat_id = '&s' and users_chats.user_id != '%s';", chat_id, user_id);
+            String query = String.format("select users.user_id, users.username from users join users_chats on users.user_id = users_chats.user_id where users_chats.chat_id = '%s' and users_chats.user_id != '%s';", chat_id, user_id);
             statement = conn.createStatement();
             ResultSet rs = statement.executeQuery(query);
             JSONArray result = convertResultSetToJson(rs);
