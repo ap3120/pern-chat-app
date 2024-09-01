@@ -25,7 +25,7 @@ public class MessageHandler implements HttpHandler {
 
         if (httpExchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
             OptionRequestHandler.handle(httpExchange);
-        } else if (arrayPath.length == 1) {
+        } else if (arrayPath.length == 2) {
             if (httpExchange.getRequestMethod().equalsIgnoreCase("POST")) {
                 InputStreamReader requestBodyReader = new InputStreamReader(httpExchange.getRequestBody(), "utf-8");
                 BufferedReader bufferedReader = new BufferedReader(requestBodyReader);
@@ -40,17 +40,16 @@ public class MessageHandler implements HttpHandler {
                 JSONObject jsonBody = new JSONObject(body);
                 JSONObject jsonResponse = Postgres.addMessage(connection,
                         (String) jsonBody.get("content"),
-                        (int) jsonBody.get("sender_id"),
+                        Integer.parseInt((String) jsonBody.get("sender_id")),
                         (String) jsonBody.get("sender_username"),
                         (int) jsonBody.get("receiver_id"),
                         (String) jsonBody.get("receiver_username"),
-                        (int) jsonBody.get("chat_id"),
-                        (LocalDateTime) jsonBody.get("created_at"));
+                        (int) jsonBody.get("chat_id"));
                 response = jsonResponse.toString();
             }
-        } else if (arrayPath.length == 2) {
+        } else if (arrayPath.length == 3) {
             if (httpExchange.getRequestMethod().equalsIgnoreCase("GET")) {
-                JSONArray jsonResponse = Postgres.getMessagesFromChat(connection, Integer.parseInt(arrayPath[1]));
+                JSONArray jsonResponse = Postgres.getMessagesFromChat(connection, Integer.parseInt(arrayPath[2]));
                 response = jsonResponse.toString();
             }
         }

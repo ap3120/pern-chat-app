@@ -25,7 +25,6 @@ export const TextArea = ({inputRef, contact, setMessages}) => {
 
   const handleClick = async() => {
     const msg = message.replace(/[\n]/g, '<br />');
-    console.log(msg);
     try {
       const response = await fetch(`http://localhost:${PORT}/message`, {
         method: 'POST',

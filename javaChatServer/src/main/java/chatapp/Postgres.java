@@ -204,11 +204,11 @@ public class Postgres {
      * @param receiver_id
      * @param receiver_username
      * @param chat_id
-     * @param send_at
      * @return the added message
      */
-    public static JSONObject addMessage(Connection conn, String content, int sender_id, String sender_username, int receiver_id, String receiver_username, int chat_id, LocalDateTime send_at) {
+    public static JSONObject addMessage(Connection conn, String content, int sender_id, String sender_username, int receiver_id, String receiver_username, int chat_id) {
         Statement statement;
+        LocalDateTime send_at = LocalDateTime.now();
         try {
             String query = String.format("insert into messages (content, sender_id, sender_username, receiver_id, receiver_username, chat_id, send_at) values('%s', '%s', '%s', '%s', '%s', '%s', '%s') returning *;",
                     content, sender_id, sender_username, receiver_id, receiver_username, chat_id, send_at
