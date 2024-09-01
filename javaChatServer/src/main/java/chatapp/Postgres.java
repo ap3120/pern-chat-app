@@ -152,16 +152,18 @@ public class Postgres {
     public static JSONObject updateUser(Connection conn, int user_id, String prevPasswordToCheck, String newPassword) {
         Statement statement;
         try {
-            String query = String.format("Select password from users where user_id = '%s'", user_id);
-            statement = conn.createStatement();
+            String query = String.format("Select password from users where user_id = '%s';", user_id);
+            statement = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
             ResultSet rs = statement.executeQuery(query);
-            JSONObject result = convertResultSetToJson(rs).getJSONObject(0);
-            if (result == null) {
+            if (! rs.first()) {
                 return infoMessage("User of user_id " + user_id + " doesn't exist.");
             }
+            rs.beforeFirst();
+            JSONArray res = convertResultSetToJson(rs);
+            JSONObject result = (JSONObject) res.get(0);
             if (result.get("password").equals(hash(prevPasswordToCheck))) {
                 String hashedNewPassword = hash(newPassword);
-                String newQuery = String.format("update users set password = '%s' where user_id = '%s'", hashedNewPassword, user_id);
+                String newQuery = String.format("update users set password = '%s' where user_id = '%s' returning *;", hashedNewPassword, user_id);
                 Statement newStatement = conn.createStatement();
                 ResultSet newRs = newStatement.executeQuery(newQuery);
                 if (newRs != null) return infoMessage("Password successfully updated");
