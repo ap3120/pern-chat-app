@@ -34,7 +34,6 @@ export const Contacts = ({setContact}) => {
     try {
       const response = await fetch(`http://localhost:${PORT}/chat/${sessionStorage.getItem('user_id')}`);
       const jsonResponse = await response.json();
-      console.log(jsonResponse);
       setChats(jsonResponse);
       for (let i=0; i<jsonResponse.length; i++) {
         getChatContact(jsonResponse[i].chat_id);
@@ -48,7 +47,6 @@ export const Contacts = ({setContact}) => {
     try {
       const response = await fetch(`http://localhost:${PORT}/chat/users_chats/${chat_id}/${sessionStorage.getItem("user_id")}`)
       const jsonResponse = await response.json();
-      console.log(jsonResponse);
       setChats(prevChats => prevChats.map(elem => (elem.chat_id === chat_id ? {...elem, chat_contact: jsonResponse.username, chat_contact_id: jsonResponse.user_id} : elem)))
     } catch(error) {
       console.log(error);
