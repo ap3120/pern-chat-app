@@ -11,8 +11,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.sql.Connection;
-import java.time.LocalDateTime;
-import java.util.Arrays;
 
 public class MessageHandler implements HttpHandler {
     private Connection connection;

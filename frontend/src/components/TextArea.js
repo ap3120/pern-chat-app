@@ -18,7 +18,7 @@ outline: 0;
 }
 `
 )
-export const TextArea = ({inputRef, contact, setMessages}) => {
+export const TextArea = ({inputRef, contact, setMessages, sendMessageToSocket}) => {
 
   const [message, setMessage] = useState('');
   const PORT = process.env.REACT_APP_PORT;
@@ -26,22 +26,24 @@ export const TextArea = ({inputRef, contact, setMessages}) => {
   const handleClick = async() => {
     const msg = message.replace(/[\n]/g, '<br />');
     try {
+      const body = JSON.stringify({
+        content: msg,
+        sender_id: sessionStorage.getItem('user_id'),
+        sender_username: sessionStorage.getItem('username'),
+        receiver_id: contact.user_id,
+        receiver_username: contact.username,
+        chat_id: contact.chat_id,
+        send_at: new Date(),
+      });
+      sendMessageToSocket(body);
       const response = await fetch(`http://localhost:${PORT}/message`, {
         method: 'POST',
-        body: JSON.stringify({
-          content: msg,
-          sender_id: sessionStorage.getItem('user_id'),
-          sender_username: sessionStorage.getItem('username'),
-          receiver_id: contact.user_id,
-          receiver_username: contact.username,
-          chat_id: contact.chat_id,
-          send_at: new Date(),
-        }),
+        body: body,
         headers: {'Content-Type': 'application/json'}
       })
       const jsonResponse = await response.json();
+      console.log(jsonResponse);
       setMessage('');
-      setMessages(prevMessages => [...prevMessages, jsonResponse])
     } catch(error) {
       console.log(error);
     }

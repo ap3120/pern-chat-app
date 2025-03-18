@@ -1,11 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import {TextArea} from './TextArea';
 import {MessageContainer} from './MessageContainer';
 import { AppBar, Box, Toolbar, Typography } from '@mui/material';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 
-export const Chat = ({contact}) => {
-  const [messages, setMessages] = useState([]);
+export const Chat = ({contact, sendMessageToSocket, messages, setMessages}) => {
   const inputRef = useRef();
 
   useEffect(() => {
@@ -23,7 +22,7 @@ export const Chat = ({contact}) => {
             </Toolbar>
           </AppBar>
           <MessageContainer contact={contact} messages={messages} setMessages={setMessages}/>
-          <TextArea inputRef={inputRef} contact={contact} setMessages={setMessages}/>
+          <TextArea inputRef={inputRef} contact={contact} setMessages={setMessages} sendMessageToSocket={sendMessageToSocket} />
         </>
       }
     </Box>
