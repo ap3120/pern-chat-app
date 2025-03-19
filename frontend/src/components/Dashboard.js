@@ -1,18 +1,29 @@
 import {useCallback, useState} from 'react';
 import {Contacts} from './Contacts.js';
 import {Chat} from './Chat.js';
-import {Navigate} from 'react-router-dom';
+import {Navigate, useNavigate} from 'react-router-dom';
 
 export const Dashboard = () => {
 
   const [contact, setContact] = useState({});
   const [messages, setMessages] = useState([]);
+  
+  const navigate = useNavigate();
 
   const socket = new WebSocket("ws://localhost:8080/ws");
   
   const sendMessageToSocket = useCallback(data => {
     if (socket) {
       socket.send(data);
+    }
+  }, [socket]);
+
+  const closeSocket = useCallback(() => {
+    if (socket) {
+      socket.close();
+      sessionStorage.setItem('user_id', '');
+      sessionStorage.setItem('username', '');
+      navigate('/');
     }
   }, [socket]);
   
@@ -34,17 +45,14 @@ export const Dashboard = () => {
   }
 
   socket.onclose = () => {
-    const message = {client_id_to_remove: sessionStorage.getItem("user_id")};
-    socket.send(JSON.stringify(message));
     sessionStorage.setItem('user_id', '');
     sessionStorage.setItem('username', '');
-    return (<Navigate to="/" />);
-
+    navigate("/");
   }
 
   return (
     <div style={{display:'flex', width:'100vw', height:'100vh'}}>
-      <Contacts setContact={setContact}/>
+      <Contacts setContact={setContact} closeSocket={closeSocket} />
       <Chat contact={contact} sendMessageToSocket={sendMessageToSocket} messages={messages} setMessages={setMessages} />
     </div>
   )

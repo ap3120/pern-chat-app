@@ -4,7 +4,7 @@ import {Navbar} from './Navbar';
 import {SearchUserInput} from './SearchUserInput';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 
-export const Contacts = ({setContact}) => {
+export const Contacts = ({setContact, closeSocket}) => {
 
   const [filteringUsers, setFilteringUsers] = useState(false);
   const [users, setUsers] = useState([]);
@@ -64,7 +64,7 @@ export const Contacts = ({setContact}) => {
 
   return (
     <Box sx={{width:'20vw', minWidth:'400px', backgroundColor:'background.main'}}>
-      <Navbar setFilteringUsers={setFilteringUsers} setUsers={setUsers}/>
+      <Navbar setFilteringUsers={setFilteringUsers} setUsers={setUsers} closeSocket={closeSocket} />
       {filteringUsers &&
         <Box sx={{p:2}}>
           <SearchUserInput users={users} setChats={setChats} setFilteringUsers={setFilteringUsers}/>

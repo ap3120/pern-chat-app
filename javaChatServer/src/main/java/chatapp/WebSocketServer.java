@@ -30,8 +30,6 @@ public class WebSocketServer {
         JsonNode jsonMessage = mapper.readTree(message);
         if (jsonMessage.get("new_client_id") != null) {
             clients.put(jsonMessage.get("new_client_id").asText(), session.getId());
-        } else if (jsonMessage.get("client_id_to_remove") != null) {
-            clients.remove(jsonMessage.get("client_id_to_remove").asText());
         } else if (jsonMessage.get("content") != null && jsonMessage.get("receiver_id") != null) {
             String receiverId = jsonMessage.get("receiver_id").asText();
             for (Session s : sessions) {
@@ -46,6 +44,13 @@ public class WebSocketServer {
     @OnClose
     public void onClose(Session session) {
         sessions.remove(session);
+        for (String key : clients.keySet()) {
+            System.out.println(key);
+            if (clients.get(key).equals(session.getId())) {
+                System.out.println("Removing this user: " + key);
+                clients.remove(key);
+            }
+        }
         System.out.println("Connection closed: " + session.getId());
     }
 }

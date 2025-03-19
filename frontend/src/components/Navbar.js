@@ -6,7 +6,7 @@ import {ThemeToggle} from './ThemeToggle';
 import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
 import {useNavigate} from 'react-router-dom';
 
-export const Navbar = ({setFilteringUsers, setUsers}) => {
+export const Navbar = ({setFilteringUsers, setUsers, closeSocket}) => {
 
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
@@ -32,17 +32,7 @@ export const Navbar = ({setFilteringUsers, setUsers}) => {
 
   const handleLogout = async() => {
     setAnchorEl(null);
-    try {
-      const response = await fetch(`http://localhost:${PORT}/logout`);
-      const jsonResponse = await response.json();
-      if (jsonResponse.msg === "Successfully logged out.") {
-        sessionStorage.setItem('user_id', '');
-        sessionStorage.setItem('username', '');
-        navigate('/');
-      }
-    } catch(error) {
-      console.log(error);
-    }
+    closeSocket();
   }
 
   const handleProfile = () => {
