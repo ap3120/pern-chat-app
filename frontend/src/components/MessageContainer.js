@@ -10,12 +10,12 @@ export const MessageContainer = ({contact, messages, setMessages}) => {
     return {
       p: 1,
       borderRadius: '15px',
-      marginLeft: msg.sender_id == sessionStorage.getItem('user_id') ? 'auto' : 0,
-      marginRight: msg.sender_id == sessionStorage.getItem('user_id') ? 0 : 'auto',
+      marginLeft: msg.sender_id === parseInt(sessionStorage.getItem('user_id')) ? 'auto' : 0,
+      marginRight: msg.sender_id === parseInt(sessionStorage.getItem('user_id')) ? 0 : 'auto',
       marginBottom: '10px',
       width: 'fit-content',
-      backgroundColor: msg.sender_id == sessionStorage.getItem('user_id') ? 'primary.main' : 'secondary.main',
-      color: msg.sender_id == sessionStorage.getItem('user_id') ? 'primary.contrastText' : 'secondary.contrastText',
+      backgroundColor: msg.sender_id === parseInt(sessionStorage.getItem('user_id')) ? 'primary.main' : 'secondary.main',
+      color: msg.sender_id === parseInt(sessionStorage.getItem('user_id')) ? 'primary.contrastText' : 'secondary.contrastText',
     }
   }
 
@@ -46,7 +46,7 @@ export const MessageContainer = ({contact, messages, setMessages}) => {
           {msg.content.split('<br />').map((elem, i) => (
             <Typography variant='body2' key={i} sx={{overflowWrap:'break-word', wordBreak:'break-word'}}>{elem}</Typography>
           ))}
-          <Typography sx={{textAlign:'right', fontSize:'0.7rem'}}>{dayjs(msg.send_at).format('hh:mm, ddd DD MMM YYYY')}</Typography>
+          <Typography sx={{textAlign:'right', fontSize:'0.7rem'}}>{dayjs(msg.send_at).format('HH:mm, ddd DD MMM YYYY')}</Typography>
         </Box>
       ))}
     </Box>

@@ -18,7 +18,7 @@ outline: 0;
 }
 `
 )
-export const TextArea = ({inputRef, contact, setMessages, sendMessageToSocket}) => {
+export const TextArea = ({inputRef, contact, sendMessageToSocket}) => {
 
   const [message, setMessage] = useState('');
   const PORT = process.env.REACT_APP_PORT;
@@ -36,13 +36,11 @@ export const TextArea = ({inputRef, contact, setMessages, sendMessageToSocket}) 
         send_at: new Date(),
       });
       sendMessageToSocket(body);
-      const response = await fetch(`http://localhost:${PORT}/message`, {
+      await fetch(`http://localhost:${PORT}/message`, {
         method: 'POST',
         body: body,
         headers: {'Content-Type': 'application/json'}
       })
-      const jsonResponse = await response.json();
-      console.log(jsonResponse);
       setMessage('');
     } catch(error) {
       console.log(error);

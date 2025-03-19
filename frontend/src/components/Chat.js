@@ -22,7 +22,7 @@ export const Chat = ({contact, sendMessageToSocket, messages, setMessages}) => {
             </Toolbar>
           </AppBar>
           <MessageContainer contact={contact} messages={messages} setMessages={setMessages}/>
-          <TextArea inputRef={inputRef} contact={contact} setMessages={setMessages} sendMessageToSocket={sendMessageToSocket} />
+          <TextArea inputRef={inputRef} contact={contact} sendMessageToSocket={sendMessageToSocket} />
         </>
       }
     </Box>

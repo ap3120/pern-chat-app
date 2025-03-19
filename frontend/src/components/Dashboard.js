@@ -27,9 +27,10 @@ export const Dashboard = () => {
   }
 
   socket.onmessage = event => {
-    console.log(event.data);
     const jsonData = JSON.parse(event.data);
-    if (jsonData.content) setMessages(prevMessages => [...prevMessages, jsonData]);
+    if (jsonData.content && (parseInt(jsonData.sender_id) === contact.user_id || jsonData.sender_id === sessionStorage.getItem("user_id"))) {
+      setMessages(prevMessages => [...prevMessages, jsonData]);
+    }
   }
 
   socket.onclose = () => {

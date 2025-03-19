@@ -32,9 +32,10 @@ public class WebSocketServer {
             clients.put(jsonMessage.get("new_client_id").asText(), session.getId());
         } else if (jsonMessage.get("client_id_to_remove") != null) {
             clients.remove(jsonMessage.get("client_id_to_remove").asText());
-        } else if (jsonMessage.get("content") != null && jsonMessage.get("sender_id") != null && jsonMessage.get("receiver_id") != null) {
+        } else if (jsonMessage.get("content") != null && jsonMessage.get("receiver_id") != null) {
+            String receiverId = jsonMessage.get("receiver_id").asText();
             for (Session s : sessions) {
-                if (clients.get(jsonMessage.get("receiver_id").asText()).equals(s.getId())) {
+                if (clients.get(receiverId) != null && clients.get(receiverId).equals(s.getId())) {
                     s.getBasicRemote().sendText(message);
                 }
             }
