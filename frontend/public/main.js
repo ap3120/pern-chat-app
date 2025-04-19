@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow } = require('electron');
 const path = require('node:path');
 
 const createWindow = () => {
@@ -11,7 +11,6 @@ const createWindow = () => {
     autoHideMenuBar: true,
   })
 
-  //win.loadFile('public/index.html')
   const isDev = !app.isPackaged;
   if (isDev) {
     win.loadURL('http://localhost:3000');
@@ -22,7 +21,6 @@ const createWindow = () => {
 }
 
 app.whenReady().then(() => {
-  ipcMain.handle("ping", () => "pong")
   createWindow()
 
   app.on('activate', () => {
