@@ -1,4 +1,4 @@
-import {useCallback, useState} from 'react';
+import {useCallback, useState, useMemo} from 'react';
 import {Contacts} from './Contacts.js';
 import {Chat} from './Chat.js';
 import {Navigate, useNavigate} from 'react-router-dom';
@@ -10,7 +10,7 @@ export const Dashboard = () => {
   
   const navigate = useNavigate();
 
-  const socket = new WebSocket("ws://localhost:8080/ws");
+  const socket = useMemo(() => new WebSocket("ws://localhost:8080/ws"), []);
   
   const sendMessageToSocket = useCallback(data => {
     if (socket) {
@@ -25,7 +25,7 @@ export const Dashboard = () => {
       sessionStorage.setItem('username', '');
       navigate('/');
     }
-  }, [socket]);
+  }, [socket, navigate]);
   
   if (!sessionStorage.getItem('username')) {
     return (<Navigate to='/'/>);

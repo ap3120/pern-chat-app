@@ -1,5 +1,5 @@
 import { List, ListItem, ListItemText, Box } from '@mui/material';
-import {useState, useEffect} from 'react';
+import {useState, useEffect, useCallback} from 'react';
 import {Navbar} from './Navbar';
 import {SearchUserInput} from './SearchUserInput';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
@@ -30,7 +30,7 @@ export const Contacts = ({setContact, closeSocket}) => {
     ]
   }
 
-  const getChats = async() => {
+  const getChats = useCallback(async() => {
     try {
       const response = await fetch(`http://localhost:${PORT}/chat/${sessionStorage.getItem('user_id')}`);
       const jsonResponse = await response.json();
@@ -41,7 +41,7 @@ export const Contacts = ({setContact, closeSocket}) => {
     } catch (error) {
       console.log(error);
     }
-  }
+  }, [getChatContact, PORT]);
 
   const getChatContact = async(chat_id) => {
     try {

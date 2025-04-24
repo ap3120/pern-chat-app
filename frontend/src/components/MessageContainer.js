@@ -1,5 +1,5 @@
 import { Typography, Box } from "@mui/material";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import dayjs from "dayjs";
 
 export const MessageContainer = ({contact, messages, setMessages}) => {
@@ -20,7 +20,7 @@ export const MessageContainer = ({contact, messages, setMessages}) => {
   }
 
   const PORT = process.env.REACT_APP_PORT;
-  const getMessages = async() => {
+  const getMessages = useCallback(async() => {
     try {
       const response = await fetch(`http://localhost:${PORT}/message/${contact.chat_id}`);
       const jsonResponse = await response.json();
@@ -28,7 +28,7 @@ export const MessageContainer = ({contact, messages, setMessages}) => {
     } catch (error) {
       console.log(error);
     }
-  }
+  }, [PORT, contact.chat_id, setMessages]);
 
   useEffect(() => {
     getMessages();

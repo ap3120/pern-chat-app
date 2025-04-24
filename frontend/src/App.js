@@ -1,5 +1,5 @@
 // react router
-import {BrowserRouter as Router, Switch, Routes, Route, Link, Navigate} from "react-router-dom";
+import {BrowserRouter as Router, Routes, Route} from "react-router-dom";
 
 // components
 import {RegisterCard} from './components/RegisterCard';
