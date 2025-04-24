@@ -33,6 +33,6 @@ The server starts on the port set up in .env or on port 3000 by default.
 
 ## Starting the frontend
 
-### `cd frontend && npm start`
+### `cd frontend && npm run dev`
 
 If the server runs on port 3000, React might ask you to use a different port, type `'yes'`.
