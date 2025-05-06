@@ -2,7 +2,8 @@
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
-  "main": "public/main.js",
+  "main": "public/electron.js",
+  "homepage": ".",
   "dependencies": {
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
@@ -11,6 +12,7 @@
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
+    "asar": "^3.2.0",
     "dayjs": "^1.11.9",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -24,7 +26,8 @@
     "dev": "concurrently \"npm:start\" \"npm:electron\"",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "dist": "npm run build && electron-builder"
   },
   "eslintConfig": {
     "extends": [
@@ -49,6 +52,13 @@
     "@types/node": "^22.13.14",
     "concurrently": "^9.1.2",
     "electron": "^35.2.0",
+    "electron-builder": "^26.0.12",
     "wait-on": "^8.0.3"
+  },
+  "build": {
+    "appId": "com.neuneu.chatApp",
+    "linux": {
+      "target": "AppImage"
+    }
   }
 }
