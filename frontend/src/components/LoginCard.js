@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useState, useEffect} from 'react';
 import {Box, Button, Card, TextField, IconButton, FormHelperText, Snackbar, Alert} from '@mui/material';
 import { useTheme } from '../context/ThemeContext.js';
 import Visibility from '@mui/icons-material/Visibility';
@@ -9,6 +9,7 @@ import { NavLink, Navigate, useNavigate } from 'react-router-dom';
 import {ThemeToggle} from './ThemeToggle.js';
 import lightBg from '../media/lightbg.jpeg';
 import darkBg from '../media/darkbg.jpeg';
+import { getGlobalVariable, setGlobalVariable } from "../utils/globalVariable";
 
 export const LoginCard = () => {
 
@@ -69,23 +70,35 @@ export const LoginCard = () => {
       setOpenError(true);
     }
   }
-  /*const handleDummy = async() => {
-    try {
-      const response = await fetch(`${ENDPOINT}/dummy`, {
-        method: 'POST',
-        body: JSON.stringify({
-          msg: "Some message haha!"
-        }),
-        headers: {"Content-Type": "application/json"}
-      });
-      if (response.ok) {
-        const jsonResponse = await response.json();
-        console.log(jsonResponse);
-      }
-    } catch(error) {
-      console.log(error);
+
+  useEffect(() => {
+    if (window.electron === undefined) {
+
+    } else {
+      window.electron.readFile("ip.txt")
+        .then(result => {
+          setGlobalVariable(result);
+        })
+        .catch(error => {
+          console.log(error);
+        });
     }
-  }*/
+  }, []);
+
+  const handleDummy = async() => {
+    console.log(getGlobalVariable());
+    if (window.electron === undefined) {
+
+    } else {
+      window.electron.openFileDialog([{name: "All Files", extensions: ["json"]}])
+        .then(result => {
+          console.log(result);
+        })
+        .catch(error => {
+          console.log(error);
+        });
+    }
+  }
 
   const handleCloseError = (event, reason) => {
     if (reason === 'clickaway') {
@@ -110,6 +123,7 @@ export const LoginCard = () => {
       backgroundSize:'cover',
       backgroundPosition:'center'
     }}>
+      <button onClick={handleDummy}>load</button>
       <Card sx={{display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'center', p:5, backgroundColor:'transparent', backdropFilter:'blur(20px)'}}>
         <ThemeToggle/>
         <TextField
