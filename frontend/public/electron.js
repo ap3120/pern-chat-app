@@ -23,6 +23,8 @@ const createWindow = () => {
 
 }
 
+app.commandLine.appendSwitch('xdg-portal-required-version', '4');
+
 app.whenReady().then(() => {
   createWindow()
 
@@ -35,15 +37,52 @@ app.whenReady().then(() => {
   })
 })
 
-ipcMain.handle("open-file-dialog", async (_event, filters) => {
-  const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ["openFile"], filters: filters });
-  return canceled ? null : filePaths[0];
+ipcMain.handle("open-file-dialog", async (_event, filters, defaultPath) => {
+  try {
+    const { canceled, filePaths } = await dialog.showOpenDialog(BrowserWindow.getFocusedWindow(), {
+      properties: ["openFile"],
+      filters: filters,
+      defaultPath: defaultPath
+    });
+    if (canceled) {
+      return null;
+    } else {
+      return fs.readFileSync(filePaths[0]).toString("base64");
+    }
+  } catch (error) {
+    console.log(error);
+    return null;
+  }
 });
 
+ipcMain.handle("open-save-dialog", async (_event, defaultPath) => {
+  try {
+    const { canceled, filePath } = await dialog.showSaveDialog({
+      defaultPath: defaultPath,
+      filters: [
+        { name: "All Files", extensions: ["*"] }
+      ]
+    })
+    return canceled ? null : filePath;
+  } catch (error) {
+    console.log(error);
+    return null;
+  }
+})
 
-
-ipcMain.handle("file--read", async (_event, filePath) => {
+ipcMain.handle("file-read", async (_event, filePath) => {
   const content = fs.readFileSync(path.join(__dirname, filePath), "utf-8");
-  console.log("content is " + content);
   return content;
 });
+
+ipcMain.handle("file-save", async (_event, filePath, content) => {
+  try {
+    if (filePath.slice(filePath.length - 5, filePath.length) !== ".json") {
+      filePath = filePath.concat(".json");
+    }
+    fs.writeFileSync(filePath, content, "utf-8");
+    return { error: null };
+  } catch(error) {
+    return { error: "Error writing file: " + error };
+  }
+})

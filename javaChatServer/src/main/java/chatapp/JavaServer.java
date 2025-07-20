@@ -29,6 +29,7 @@ public class JavaServer {
             server.createContext("/chat", new ChatHandler(connection));
             server.createContext("/message", new MessageHandler(connection));
             server.createContext("/users", new UserHandler(connection));
+            server.createContext("/profilePicture", new ProfilePictureHandler());
             server.setExecutor(null);
             server.start();
         } catch (IOException e) {

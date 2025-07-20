@@ -7,6 +7,7 @@ import OutlinedInput from '@mui/material/OutlinedInput';
 import {ThemeToggle} from './ThemeToggle.js';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate } from "react-router-dom";
+import { ProfilePicture } from "./ProfilePicture";
 
 export const Profile = () => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -90,6 +91,11 @@ export const Profile = () => {
         </IconButton>
         <Typography variant='h2' sx={{color: 'text.primary', ml: 2, mr: 2}}>Welcome, {sessionStorage.getItem('username')}</Typography>
         <ThemeToggle/>
+      </Box>
+      <Box sx={{ display: "flex", alignItems: "center"}}>
+        <ProfilePicture id={sessionStorage.getItem("user_id")} />
+        <Button variant="contained" sx={{mr: 2}}>edit</Button>
+        <Button variant="contained">remove</Button>
       </Box>
       <OutlinedInput
         type={showCurrentPassword ? 'text' : 'password'}

@@ -5,7 +5,7 @@ import {HashRouter as Router, Routes, Route} from "react-router-dom";
 import {RegisterCard} from './components/RegisterCard';
 import {LoginCard} from './components/LoginCard.js';
 import { Dashboard } from "./components/Dashboard.js";
-import {Profile} from './components/profile';
+import {Profile} from './components/Profile';
 
 import {ThemeSettingProvider, useTheme} from './context/ThemeContext';
 import { ThemeProvider, createTheme } from '@mui/material/styles';

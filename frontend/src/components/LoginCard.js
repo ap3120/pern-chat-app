@@ -9,7 +9,7 @@ import { NavLink, Navigate, useNavigate } from 'react-router-dom';
 import {ThemeToggle} from './ThemeToggle.js';
 import lightBg from '../media/lightbg.jpeg';
 import darkBg from '../media/darkbg.jpeg';
-import { getGlobalVariable, setGlobalVariable } from "../utils/globalVariable";
+import globalVariables from "../utils/globalVariables";
 
 export const LoginCard = () => {
 
@@ -75,9 +75,14 @@ export const LoginCard = () => {
     if (window.electron === undefined) {
 
     } else {
-      window.electron.readFile("ip.txt")
+      window.electron.readFile("config.txt")
         .then(result => {
-          setGlobalVariable(result);
+          const lines = result.split("\n");
+          for (let line of lines) {
+            if (line.split("=")[0] === "defaultPath") {
+              globalVariables.setDefaultPath(line.split("=")[1]);
+            }
+          }
         })
         .catch(error => {
           console.log(error);
@@ -86,13 +91,22 @@ export const LoginCard = () => {
   }, []);
 
   const handleDummy = async() => {
-    console.log(getGlobalVariable());
     if (window.electron === undefined) {
 
     } else {
-      window.electron.openFileDialog([{name: "All Files", extensions: ["json"]}])
-        .then(result => {
+      window.electron.openFileDialog([{name: "All Files", extensions: ["jpeg", "png"]}], globalVariables.getDefaultPath())
+        .then(async result => {
           console.log(result);
+          const response = await fetch(`${ENDPOINT}/profilePicture`, {
+            method: "POST",
+            body: JSON.stringify({
+              data: result
+            }),
+            headers: {
+              "Content-Type": "application/json"
+            }
+          });
+          console.log(response);
         })
         .catch(error => {
           console.log(error);
@@ -105,6 +119,32 @@ export const LoginCard = () => {
       return;
     }
     setOpenError(false);
+  }
+
+  const handleSave = () => {
+    if (window.electron !== undefined) {
+      window.electron.openSaveDialog(globalVariables.getDefaultPath())
+      .then(result => {
+          if (result) {
+            console.log(result);
+            window.electron.saveFile(result, "hello world")
+            .then(res => {
+                if (res.error) {
+                  console.log(res.error);
+                } else {
+                  console.log("Successfully write file at " + result)
+                }
+
+              })
+            .catch(error => {
+                console.log(error);
+              })
+          }
+        })
+      .catch(error => {
+          console.log(error);
+        })
+    }
   }
 
   if (sessionStorage.getItem('user_id')) {
@@ -124,6 +164,7 @@ export const LoginCard = () => {
       backgroundPosition:'center'
     }}>
       <button onClick={handleDummy}>load</button>
+      <button onClick={handleSave}>save</button>
       <Card sx={{display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'center', p:5, backgroundColor:'transparent', backdropFilter:'blur(20px)'}}>
         <ThemeToggle/>
         <TextField

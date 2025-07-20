@@ -1,5 +1,6 @@
 package chatapp.handlers;
 
+import chatapp.Backend;
 import chatapp.Postgres;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -9,10 +10,7 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.sql.Connection;
-import java.time.LocalDateTime;
-import java.util.Arrays;
 
 import static java.lang.Integer.parseInt;
 
@@ -70,14 +68,7 @@ public class ChatHandler implements HttpHandler {
             JSONObject jsonResponse = Postgres.getUser(connection, parseInt(arrayPath[3]), parseInt(arrayPath[4]));
             response = jsonResponse != null ? jsonResponse.toString() : null;
         }
-        if (response != null) {
-            httpExchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            httpExchange.sendResponseHeaders(200, response.length());
-            OutputStream outputStream = httpExchange.getResponseBody();
-            outputStream.write(response.getBytes());
-            outputStream.close();
-        } else {
-            httpExchange.sendResponseHeaders(405, -1);
-        }
+
+        Backend.sendResponse(httpExchange, response);
     }
 }
