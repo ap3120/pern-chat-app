@@ -12,21 +12,28 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class Postgres {
+public class Postgres
+{
     /**
      * Connect to the database
-     * @param dbname
-     * @param user
-     * @param password
-     * @return
+     *
+     * @param dbname   the database name
+     * @param user     the username
+     * @param password the user password
+     * @return the connection object
      */
-    public static Connection connectToDatabase(String dbname, String user, String password) {
+    public static Connection connectToDatabase(String dbname, String user, String password)
+    {
         Connection connection = null;
-        try {
+        try
+        {
             Class.forName("org.postgresql.Driver");
             connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/" + dbname, user, password);
-            if (connection != null) {}
-        } catch(Exception e) {
+            if (connection != null)
+            {
+            }
+        } catch (Exception e)
+        {
             e.printStackTrace();
         }
         return connection;
@@ -34,20 +41,25 @@ public class Postgres {
 
     /**
      * Add a chat
-     * @param conn
-     * @param created_by
+     *
+     * @param conn       the connection object
+     * @param created_by the chat creator
      * @return added chat to json
      */
-    public static JSONObject addToChat(Connection conn, int created_by) {
+    public static JSONObject addToChat(Connection conn, int created_by)
+    {
         Statement statement;
-        try {
+        try
+        {
             LocalDateTime created_at = LocalDateTime.now();
-            String query = String.format("insert into chats (created_by, created_at) values ('%s', '%s') returning *;", created_by, created_at);
+            String query = String.format("insert into chats (created_by, created_at) values ('%s', '%s') returning *;",
+                    created_by, created_at);
             statement = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
             ResultSet rs = statement.executeQuery(query);
             rs.next();
             String chat_id = rs.getString("chat_id");
-            String second_query = String.format("insert into users_chats (user_id, chat_id) values ('%s', '%s');", created_by, chat_id);
+            String second_query = String.format("insert into users_chats (user_id, chat_id) values ('%s', '%s');",
+                    created_by, chat_id);
             Statement second_statement = conn.createStatement();
             second_statement.executeUpdate(second_query);
 
@@ -55,7 +67,8 @@ public class Postgres {
 
             JSONArray result = convertResultSetToJson(rs);
             return (JSONObject) result.get(0);
-        } catch(Exception e) {
+        } catch (Exception e)
+        {
             e.printStackTrace();
             return null;
         }
@@ -63,20 +76,25 @@ public class Postgres {
 
     /**
      * Add to users_chats table
+     *
      * @param conn
      * @param user_id
      * @param chat_id
      * @return added row
      */
-    public static JSONObject addToUsersChats(Connection conn, int user_id, int chat_id) {
+    public static JSONObject addToUsersChats(Connection conn, int user_id, int chat_id)
+    {
         Statement statement;
-        try {
-            String query = String.format("insert into users_chats (user_id, chat_id) values ('%s', '%s') returning *;", user_id, chat_id);
+        try
+        {
+            String query = String.format("insert into users_chats (user_id, chat_id) values ('%s', '%s') returning *;",
+                    user_id, chat_id);
             statement = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
             ResultSet rs = statement.executeQuery(query);
             JSONArray result = convertResultSetToJson(rs);
             return (JSONObject) result.get(0);
-        } catch(Exception e) {
+        } catch (Exception e)
+        {
             e.printStackTrace();
             return null;
         }
@@ -84,19 +102,24 @@ public class Postgres {
 
     /**
      * Read from chats
+     *
      * @param conn
      * @param id
      * @return elements from chats table
      */
-    public static JSONArray readFromChats(Connection conn, int id) {
+    public static JSONArray readFromChats(Connection conn, int id)
+    {
         Statement statement;
-        try {
-            String query = String.format("select * from chats join users_chats on chats.chat_id = users_chats.chat_id where users_chats.user_id = '%s';", id);
+        try
+        {
+            String query = String.format(
+                    "select * from chats join users_chats on chats.chat_id = users_chats.chat_id where users_chats.user_id = '%s';",
+                    id);
             statement = conn.createStatement();
             ResultSet rs = statement.executeQuery(query);
-            JSONArray result = convertResultSetToJson(rs);
-            return result;
-        } catch(Exception e) {
+            return convertResultSetToJson(rs);
+        } catch (Exception e)
+        {
             e.printStackTrace();
             return null;
         }
@@ -104,38 +127,46 @@ public class Postgres {
 
     /**
      * Get user from a chat
+     *
      * @param conn
      * @param chat_id
      * @param user_id
      * @return user
      */
-    public static JSONObject getUser(Connection conn, int chat_id, int user_id) {
+    public static JSONObject getUser(Connection conn, int chat_id, int user_id)
+    {
         Statement statement;
-        try {
-            String query = String.format("select users.user_id, users.username from users join users_chats on users.user_id = users_chats.user_id where users_chats.chat_id = '%s' and users_chats.user_id != '%s';", chat_id, user_id);
+        try
+        {
+            String query = String.format(
+                    "select users.user_id, users.username from users join users_chats on users.user_id = users_chats.user_id where users_chats.chat_id = '%s' and users_chats.user_id != '%s';",
+                    chat_id, user_id);
             statement = conn.createStatement();
             ResultSet rs = statement.executeQuery(query);
             JSONArray result = convertResultSetToJson(rs);
             return (JSONObject) result.get(0);
-        } catch(Exception e) {
+        } catch (Exception e)
+        {
             return null;
         }
     }
 
     /**
      * Get all users
-     * @param conn
+     *
+     * @param conn the connection object
      * @return all users
      */
-    public static JSONArray getUsers(Connection conn) {
+    public static JSONArray getUsers(Connection conn)
+    {
         Statement statement;
-        try {
-            String query = String.format("Select user_id, username from users order by user_id asc;");
+        try
+        {
             statement = conn.createStatement();
-            ResultSet rs = statement.executeQuery(query);
-            JSONArray result = convertResultSetToJson(rs);
-            return result;
-        } catch(Exception e) {
+            ResultSet rs = statement.executeQuery("Select user_id, username from users order by user_id asc;");
+            return convertResultSetToJson(rs);
+        } catch (Exception e)
+        {
             e.printStackTrace();
             return null;
         }
@@ -143,35 +174,43 @@ public class Postgres {
 
     /**
      * Update a user
+     *
      * @param conn
      * @param user_id
      * @param prevPasswordToCheck
      * @param newPassword
      * @return info message
      */
-    public static JSONObject updateUser(Connection conn, int user_id, String prevPasswordToCheck, String newPassword) {
+    public static JSONObject updateUser(Connection conn, int user_id, String prevPasswordToCheck, String newPassword)
+    {
         Statement statement;
-        try {
+        try
+        {
             String query = String.format("Select password from users where user_id = '%s';", user_id);
             statement = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
             ResultSet rs = statement.executeQuery(query);
-            if (! rs.first()) {
+            if (!rs.first())
+            {
                 return infoMessage("User of user_id " + user_id + " doesn't exist.");
             }
             rs.beforeFirst();
             JSONArray res = convertResultSetToJson(rs);
             JSONObject result = (JSONObject) res.get(0);
-            if (result.get("password").equals(hash(prevPasswordToCheck))) {
+            if (result.get("password").equals(hash(prevPasswordToCheck)))
+            {
                 String hashedNewPassword = hash(newPassword);
-                String newQuery = String.format("update users set password = '%s' where user_id = '%s' returning *;", hashedNewPassword, user_id);
+                String newQuery = String.format("update users set password = '%s' where user_id = '%s' returning *;",
+                        hashedNewPassword, user_id);
                 Statement newStatement = conn.createStatement();
                 ResultSet newRs = newStatement.executeQuery(newQuery);
                 if (newRs != null) return infoMessage("Password successfully updated");
                 return infoMessage("Something went wrong, password couldn't be updated.");
-            } else {
+            } else
+            {
                 return infoMessage("Incorrect password.");
             }
-        } catch(Exception e) {
+        } catch (Exception e)
+        {
             e.printStackTrace();
             return null;
         }
@@ -179,19 +218,23 @@ public class Postgres {
 
     /**
      * Delete a user
+     *
      * @param conn
      * @param user_id
      * @return info message
      */
-    public static JSONObject deleteUser(Connection conn, int user_id) {
+    public static JSONObject deleteUser(Connection conn, int user_id)
+    {
         Statement statement;
-        try {
+        try
+        {
             String query = String.format("delete from users where user_id = '%s'", user_id);
             statement = conn.createStatement();
             ResultSet rs = statement.executeQuery(query);
             if (rs != null) return infoMessage("User successfully deleted.");
             return infoMessage("Something went wrong...");
-        } catch(Exception e) {
+        } catch (Exception e)
+        {
             e.printStackTrace();
             return null;
         }
@@ -199,6 +242,7 @@ public class Postgres {
 
     /**
      * Add a message
+     *
      * @param conn
      * @param content
      * @param sender_id
@@ -208,56 +252,71 @@ public class Postgres {
      * @param chat_id
      * @return the added message
      */
-    public static JSONObject addMessage(Connection conn, String content, int sender_id, String sender_username, int receiver_id, String receiver_username, int chat_id) {
+    public static JSONObject addMessage(Connection conn, String content, int sender_id, String sender_username,
+                                        int receiver_id, String receiver_username, int chat_id)
+    {
         Statement statement;
         LocalDateTime send_at = LocalDateTime.now();
-        try {
-            String query = String.format("insert into messages (content, sender_id, sender_username, receiver_id, receiver_username, chat_id, send_at) values('%s', '%s', '%s', '%s', '%s', '%s', '%s') returning *;",
+        try
+        {
+            String query = String.format(
+                    "insert into messages (content, sender_id, sender_username, receiver_id, receiver_username, chat_id, send_at) values('%s', '%s', '%s', '%s', '%s', '%s', '%s') returning *;",
                     content, sender_id, sender_username, receiver_id, receiver_username, chat_id, send_at
             );
             statement = conn.createStatement();
             ResultSet rs = statement.executeQuery(query);
             JSONArray result = convertResultSetToJson(rs);
             return (JSONObject) result.get(0);
-        } catch (Exception e) {
+        } catch (Exception e)
+        {
             return null;
         }
     }
 
     /**
      * Get messages from a chat
+     *
      * @param conn
      * @param chat_id
      * @return all messages from a chat
      */
-    public static JSONArray getMessagesFromChat(Connection conn, int chat_id) {
+    public static JSONArray getMessagesFromChat(Connection conn, int chat_id)
+    {
         Statement statement;
-        try {
+        try
+        {
             String query = String.format("select * from messages where chat_id = '%s' order by send_at", chat_id);
             statement = conn.createStatement();
             ResultSet rs = statement.executeQuery(query);
-            JSONArray result = convertResultSetToJson(rs);
-            return result;
-        } catch(Exception e) {
+            return convertResultSetToJson(rs);
+        } catch (Exception e)
+        {
             return null;
         }
     }
 
     /**
      * Check if a user exists
+     *
      * @param conn
      * @param username
      * @return
      */
-    public static boolean userExists(Connection conn, String username) {
+    public static boolean userExists(Connection conn, String username)
+    {
         Statement statement;
-        try {
+        try
+        {
             String query = String.format("select * from users where username = '%s';", username);
             statement = conn.createStatement();
             ResultSet rs = statement.executeQuery(query);
-            if (rs.next()) {return true;}
+            if (rs.next())
+            {
+                return true;
+            }
             return false;
-        } catch(Exception e) {
+        } catch (Exception e)
+        {
             e.printStackTrace();
             return false;
         }
@@ -265,80 +324,117 @@ public class Postgres {
 
     /**
      * Add a user
+     *
      * @param conn
      * @param username
      * @param password
      * @return the added user
      */
-    public static JSONObject addUser(Connection conn, String username, String password) {
+    public static JSONObject addUser(Connection conn, String username, String password)
+    {
         Statement statement;
-        try {
+        try
+        {
             if (userExists(conn, username)) return infoMessage("User " + username + " already exists.");
             String hashedPassword = hash(password);
-            String query = String.format("insert into users (username, password) values ('%s', '%s') returning *;", username, hashedPassword);
+            String query = String.format("insert into users (username, password) values ('%s', '%s') returning *;",
+                    username, hashedPassword);
             statement = conn.createStatement();
             ResultSet rs = statement.executeQuery(query);
             JSONObject result = convertResultSetToJson(rs).getJSONObject(0);
             result.remove("password");
             return result;
-        } catch(Exception e) {
+        } catch (Exception e)
+        {
             return infoMessage("Something went wrong with the server.");
         }
     }
 
-    public static JSONObject login(Connection conn, String username, String password) {
+    public static JSONObject login(Connection conn, String username, String password)
+    {
         Statement statement;
-        try {
+        try
+        {
             if (!userExists(conn, username)) return infoMessage("User " + username + " doesn't exist.");
             String query = String.format("select * from users where username = '%s';", username);
             statement = conn.createStatement();
             ResultSet rs = statement.executeQuery(query);
             JSONObject result = convertResultSetToJson(rs).getJSONObject(0);
             String dbPassword = result.getString("password");
-            if (dbPassword.equals(hash(password))) {
+            if (dbPassword.equals(hash(password)))
+            {
                 result.remove("password");
                 return result;
             }
             return infoMessage("Wrong password for " + username);
-        } catch(Exception e) {
+        } catch (Exception e)
+        {
             return infoMessage("Something went wrong with the server.");
         }
     }
 
-    private static JSONObject infoMessage(String msg) {
+    /**
+     * Cleans tables of database and restart auto increment
+     * @param conn the connection object
+     */
+    public static void cleanDatabase(Connection conn) {
+        Statement statement;
+        try {
+            statement = conn.createStatement();
+            statement.executeUpdate("TRUNCATE TABLE users CASCADE;");
+            statement.executeUpdate("ALTER SEQUENCE users_user_id_seq RESTART WITH 1;");
+            statement.executeUpdate("ALTER SEQUENCE messages_message_id_seq RESTART WITH 1;");
+            statement.executeUpdate("ALTER SEQUENCE chats_chat_id_seq RESTART WITH 1;");
+        } catch (Exception pException) {
+            System.out.println("Error cleaning tables: " + pException.getMessage());
+        }
+    }
+
+    private static JSONObject infoMessage(String msg)
+    {
         JSONObject error = new JSONObject();
         error.put("msg", msg);
         return error;
     }
 
-    private static String hash(String password) {
-        try {
+    private static String hash(String password)
+    {
+        try
+        {
             MessageDigest md = MessageDigest.getInstance("SHA-512");
             byte[] bytePassword = md.digest(password.getBytes(StandardCharsets.UTF_8));
             StringBuilder hashedPassword = new StringBuilder();
-            for (byte b : bytePassword) {
+            for (byte b : bytePassword)
+            {
                 hashedPassword.append(String.format("%02x", b));
             }
             return hashedPassword.toString();
-        } catch (Exception e) {
+        } catch (Exception e)
+        {
             return null;
         }
     }
 
     /**
      * Convert a result set to a json array
-     * @param rs
+     *
+     * @param rs the result set
      * @return json array of result set
      */
-    private static JSONArray convertResultSetToJson(ResultSet rs) {
-        try {
+    private static JSONArray convertResultSetToJson(ResultSet rs)
+    {
+        try
+        {
             ResultSetMetaData md = rs.getMetaData();
             int numCols = md.getColumnCount();
             List<String> colNames = IntStream.range(0, numCols)
-                    .mapToObj(i -> {
-                        try {
+                    .mapToObj(i ->
+                    {
+                        try
+                        {
                             return md.getColumnName(i + 1);
-                        } catch (SQLException e) {
+                        } catch (SQLException e)
+                        {
                             e.printStackTrace();
                             return "?";
                         }
@@ -346,19 +442,24 @@ public class Postgres {
                     .collect(Collectors.toList());
 
             JSONArray result = new JSONArray();
-            while (rs.next()) {
+            while (rs.next())
+            {
                 JSONObject row = new JSONObject();
-                colNames.forEach(cn -> {
-                    try {
+                colNames.forEach(cn ->
+                {
+                    try
+                    {
                         row.put(cn, rs.getObject(cn));
-                    } catch (JSONException | SQLException e) {
+                    } catch (JSONException | SQLException e)
+                    {
                         e.printStackTrace();
                     }
                 });
                 result.put(row);
             }
             return result;
-        } catch (SQLException e) {
+        } catch (SQLException e)
+        {
             e.printStackTrace();
             return null;
         }

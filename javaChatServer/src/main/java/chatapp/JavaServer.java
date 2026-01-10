@@ -10,8 +10,8 @@ import java.net.InetSocketAddress;
 import java.sql.Connection;
 
 public class JavaServer {
-    private static int port = 9000;
-    private static int socketPort = 8080;
+    private final static int port = 9000;
+    private final static int socketPort = 8080;
 
     public static void main(String[] args) {
         Dotenv dotenv = Dotenv.load();
