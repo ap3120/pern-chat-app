@@ -30,12 +30,20 @@ public class AppTest
     @BeforeAll
     public static void startServer()
     {
-        Dotenv dotenv = Dotenv.load();
-        String dbname = dotenv.get("DB_TEST_NAME");
-        String user = dotenv.get("DB_TEST_USER");
-        String password = dotenv.get("DB_TEST_PASSWORD");
-        Connection connection = Postgres.connectToDatabase(dbname, user, password);
-        System.out.println("I run");
+        String dbname = System.getenv().get("DB_TEST_NAME");
+        String user = System.getenv().get("DB_TEST_USER");
+        String password = System.getenv().get("DB_TEST_PASSWORD");
+        String host = System.getenv().get("DB_HOST");
+        String port = System.getenv().get("DB_PORT");
+        if (dbname == null)
+        { // Jenkins relies on environment variables and locally it relies on .env
+            Dotenv dotenv = Dotenv.load();
+            dbname = dotenv.get("DB_TEST_NAME");
+            user = dotenv.get("DB_TEST_USER");
+            password = dotenv.get("DB_TEST_PASSWORD");
+        }
+        Connection connection = Postgres.connectToDatabase(dbname, user, password, host != null ? host : "localhost",
+                port != null ? port : "5432");
         Postgres.cleanDatabase(connection);
         try
         {

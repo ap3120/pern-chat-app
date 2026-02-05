@@ -14,12 +14,6 @@
             <version>2.18.3</version>
         </dependency>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>3.8.1</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.glassfish.tyrus</groupId>
             <artifactId>tyrus-server</artifactId>
             <version>2.2.0</version>
@@ -56,10 +50,32 @@
             <version>5.10.2</version>
             <scope>test</scope>
         </dependency>
+        <!--<dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>5.10.2</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>5.10.2</version>
+            <scope>test</scope>
+        </dependency>-->
     </dependencies>
 
     <build>
         <plugins>
+            <!-- Configuring surefire for junit 5 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+                <configuration>
+                    <useModulePath>false</useModulePath>
+                </configuration>
+            </plugin>
             <!-- Including dependencies in the classpath with maven-assembly-plugin -->
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>

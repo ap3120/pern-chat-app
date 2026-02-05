@@ -22,19 +22,16 @@ public class Postgres
      * @param password the user password
      * @return the connection object
      */
-    public static Connection connectToDatabase(String dbname, String user, String password)
+    public static Connection connectToDatabase(String dbname, String user, String password, String host, String port)
     {
         Connection connection = null;
         try
         {
             Class.forName("org.postgresql.Driver");
-            connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/" + dbname, user, password);
-            if (connection != null)
-            {
-            }
+            connection = DriverManager.getConnection("jdbc:postgresql://" + host + ":" + port + "/" + dbname, user, password);
         } catch (Exception e)
         {
-            e.printStackTrace();
+            System.out.println("Error creating database connection: " + e.getMessage());
         }
         return connection;
     }

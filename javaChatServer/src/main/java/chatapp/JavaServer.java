@@ -9,18 +9,21 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.sql.Connection;
 
-public class JavaServer {
+public class JavaServer
+{
     private final static int port = 9000;
     private final static int socketPort = 8080;
 
-    public static void main(String[] args) {
+    public static void main(String[] args)
+    {
         Dotenv dotenv = Dotenv.load();
         String dbname = dotenv.get("DB_NAME");
         String user = dotenv.get("DB_USER");
         String password = dotenv.get("DB_PASSWORD");
-        Connection connection = Postgres.connectToDatabase(dbname, user, password);
+        Connection connection = Postgres.connectToDatabase(dbname, user, password, "localhost", "5432");
 
-        try {
+        try
+        {
             HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
             System.out.println("Server started on port " + port);
             server.createContext("/register", new RegisterHandler(connection));
@@ -31,17 +34,20 @@ public class JavaServer {
             server.createContext("/users", new UserHandler(connection));
             server.setExecutor(null);
             server.start();
-        } catch (IOException e) {
+        } catch (IOException e)
+        {
             throw new RuntimeException(e);
         }
 
         Server server = new Server("localhost", socketPort, "/", null, WebSocketServer.class);
-        try {
+        try
+        {
             server.start();
             System.out.println("WebSocket server started on ws://localhost:8080/ws");
             Thread.currentThread().join();
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Exception e)
+        {
+            System.out.println("Error starting server: " + e.getMessage());
         }
     }
 }
