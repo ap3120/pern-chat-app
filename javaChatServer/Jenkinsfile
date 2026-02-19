@@ -1,0 +1,81 @@
+pipeline {
+  agent {
+    label "first-docker-agent"
+  }
+
+  environment {
+    DB_TEST_USER = credentials('DB_TEST_USER')
+      DB_TEST_PASSWORD = credentials('DB_TEST_PASSWORD')
+      DB_TEST_NAME = credentials('DB_TEST_NAME')
+      DB_HOST = 'pg'
+      DB_PORT = '5432'
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
+    }
+    stage('Build') {
+      steps {
+        // Build project.
+        dir('javaChatServer') {
+          sh '''
+            mvn clean install -DskipTests
+            pwd
+            '''
+        }
+      }
+    }
+    stage('Start database') {
+      steps {
+        sh '''
+          docker network create test-net || true
+          docker run -d --rm \
+          --name pg \
+          --network test-net \
+          -e POSTGRES_USER=$DB_TEST_USER \
+          -e POSTGRES_PASSWORD=$DB_TEST_PASSWORD \
+          -e POSTGRES_DB=$DB_TEST_NAME \
+          -v "db-volume:/docker-entrypoint-initdb.d" \
+          postgres:15
+
+          echo "Waiting for Postgres to be ready..."
+          until docker exec pg \
+          pg_isready -h localhost -p 5432 -U $DB_TEST_USER; do
+          sleep 1
+          done
+          echo "Postgres is ready"
+          '''
+      }
+    }
+    stage('Test') {
+      steps {
+        sh '''
+          docker pull maven:3.9.6-eclipse-temurin-11
+          pwd
+          docker run --rm \
+          --network test-net \
+          -v "test-volume:/workspace" \
+          -w /workspace/javaChatServer \
+          -e DB_TEST_NAME=$DB_TEST_NAME \
+          -e DB_TEST_USER=$DB_TEST_USER \
+          -e DB_TEST_PASSWORD=$DB_TEST_PASSWORD \
+          -e DB_HOST=$DB_HOST \
+          maven:3.9.6-eclipse-temurin-11 \
+          mvn test
+          '''
+      }
+    }
+  }
+
+  post {
+    always {
+      sh '''
+        docker rm -f pg || true
+        docker network rm test-net || true
+        '''
+    }
+  }
+}
