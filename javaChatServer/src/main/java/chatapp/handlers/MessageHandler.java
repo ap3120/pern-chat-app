@@ -9,12 +9,11 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.sql.Connection;
 
-public class MessageHandler implements HttpHandler {
-    private Connection connection;
-    public MessageHandler(Connection connection) {this.connection = connection;}
+public class MessageHandler extends AbstractHandler implements HttpHandler {
+
+    public MessageHandler(Connection connection) {super(connection);}
     @Override
     public void handle(HttpExchange httpExchange) throws IOException {
         String path = httpExchange.getRequestURI().getPath();
@@ -52,11 +51,7 @@ public class MessageHandler implements HttpHandler {
             }
         }
         if (response != null) {
-            httpExchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            httpExchange.sendResponseHeaders(200, response.length());
-            OutputStream outputStream = httpExchange.getResponseBody();
-            outputStream.write(response.getBytes());
-            outputStream.close();
+            sendResponseToClient(httpExchange, response, 200);
         } else {
             httpExchange.sendResponseHeaders(405, -1);
         }

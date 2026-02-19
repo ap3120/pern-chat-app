@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.sql.Connection;
 
-public class RegisterHandler extends EndpointHandler implements HttpHandler
+public class RegisterHandler extends AbstractHandler implements HttpHandler
 {
 
     public RegisterHandler(Connection connection)

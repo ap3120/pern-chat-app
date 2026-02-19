@@ -6,11 +6,11 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.sql.Connection;
 
-public class EndpointHandler
+public class AbstractHandler
 {
     protected final Connection connection;
 
-    public EndpointHandler(Connection pConnection)
+    public AbstractHandler(Connection pConnection)
     {
         connection = pConnection;
     }
@@ -26,7 +26,7 @@ public class EndpointHandler
             outputStream.close();
         } catch (IOException e)
         {
-            System.out.println(e.getMessage());
+            System.out.println("Error sending response: " + e.getMessage());
         }
     }
 }

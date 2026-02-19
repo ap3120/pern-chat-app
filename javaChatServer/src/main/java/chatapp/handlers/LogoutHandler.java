@@ -6,11 +6,17 @@ import com.sun.net.httpserver.HttpHandler;
 import java.io.IOException;
 import java.sql.Connection;
 
-public class LogoutHandler implements HttpHandler {
-    private Connection connection;
-    public LogoutHandler(Connection connection) {this.connection = connection;}
+public class LogoutHandler extends AbstractHandler implements HttpHandler
+{
+
+    public LogoutHandler(Connection connection)
+    {
+        super(connection);
+    }
+
     @Override
-    public void handle(HttpExchange httpExchange) throws IOException {
+    public void handle(HttpExchange httpExchange) throws IOException
+    {
 
     }
 }

@@ -14,7 +14,7 @@ import java.sql.Connection;
 
 import static java.lang.Integer.parseInt;
 
-public class ChatHandler extends EndpointHandler implements HttpHandler
+public class ChatHandler extends AbstractHandler implements HttpHandler
 {
     public ChatHandler(Connection connection)
     {

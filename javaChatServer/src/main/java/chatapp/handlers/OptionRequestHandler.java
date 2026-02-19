@@ -4,8 +4,10 @@ import com.sun.net.httpserver.HttpExchange;
 
 import java.io.IOException;
 
-public class OptionRequestHandler{
-    public static void handle(HttpExchange httpExchange) throws IOException {
+public class OptionRequestHandler
+{
+    public static void handle(HttpExchange httpExchange) throws IOException
+    {
         httpExchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
         httpExchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
         httpExchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type, Authorization");
