@@ -8,9 +8,11 @@ export const Dashboard = () => {
   const [contact, setContact] = useState({});
   const [messages, setMessages] = useState([]);
   
+  const WEBSOCKET_PORT = process.env.WEBSOCKET_PORT;
+  
   const navigate = useNavigate();
 
-  const socket = useMemo(() => new WebSocket("ws://localhost:8080/ws"), []);
+  const socket = useMemo(() => new WebSocket("ws://localhost:" + WEBSOCKET_PORT + "/ws"), []);
   
   const sendMessageToSocket = useCallback(data => {
     if (socket) {

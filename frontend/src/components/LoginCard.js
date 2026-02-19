@@ -22,7 +22,7 @@ export const LoginCard = () => {
   const dark = useTheme();
   const navigate = useNavigate();
 
-  const PORT = process.env.REACT_APP_PORT;
+  const PORT = process.env.SERVER_PORT;
   const ENDPOINT = `http://localhost:${PORT}`;
 
   const handleClickShowPassword = () => setShowPassword((show) => !show);

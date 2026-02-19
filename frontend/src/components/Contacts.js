@@ -30,6 +30,15 @@ export const Contacts = ({setContact, closeSocket}) => {
     ]
   }
 
+  const getChatContact = async(chat_id) => {
+    try {
+      const response = await fetch(`http://localhost:${PORT}/chat/users_chats/${chat_id}/${sessionStorage.getItem("user_id")}`)
+      const jsonResponse = await response.json();
+      setChats(prevChats => prevChats.map(elem => (elem.chat_id === chat_id ? {...elem, chat_contact: jsonResponse.username, chat_contact_id: jsonResponse.user_id} : elem)))
+    } catch(error) {
+      console.log(error);
+    }
+  }
   const getChats = useCallback(async() => {
     try {
       const response = await fetch(`http://localhost:${PORT}/chat/${sessionStorage.getItem('user_id')}`);
@@ -43,15 +52,6 @@ export const Contacts = ({setContact, closeSocket}) => {
     }
   }, [getChatContact, PORT]);
 
-  const getChatContact = async(chat_id) => {
-    try {
-      const response = await fetch(`http://localhost:${PORT}/chat/users_chats/${chat_id}/${sessionStorage.getItem("user_id")}`)
-      const jsonResponse = await response.json();
-      setChats(prevChats => prevChats.map(elem => (elem.chat_id === chat_id ? {...elem, chat_contact: jsonResponse.username, chat_contact_id: jsonResponse.user_id} : elem)))
-    } catch(error) {
-      console.log(error);
-    }
-  }
 
   const handleClick = (chat, index) => {
     setSelectedIndex(index);

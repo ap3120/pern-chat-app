@@ -227,12 +227,11 @@ public class Postgres
         {
             String query = String.format("delete from users where user_id = '%s'", user_id);
             statement = conn.createStatement();
-            ResultSet rs = statement.executeQuery(query);
-            if (rs != null) return infoMessage("User successfully deleted.");
-            return infoMessage("Something went wrong...");
+            statement.executeUpdate(query);
+            return infoMessage("User successfully deleted.");
         } catch (Exception e)
         {
-            e.printStackTrace();
+            System.out.println("Error deleting user: " + e.getMessage());
             return null;
         }
     }

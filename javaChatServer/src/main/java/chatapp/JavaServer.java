@@ -12,7 +12,7 @@ import java.sql.Connection;
 public class JavaServer
 {
     private final static int port = 9000;
-    private final static int socketPort = 8080;
+    private final static int socketPort = 9200;
 
     public static void main(String[] args)
     {
@@ -43,7 +43,7 @@ public class JavaServer
         try
         {
             server.start();
-            System.out.println("WebSocket server started on ws://localhost:8080/ws");
+            System.out.println("WebSocket server started on ws://localhost:" + socketPort + "/ws");
             Thread.currentThread().join();
         } catch (Exception e)
         {

@@ -1,5 +1,6 @@
 package chatapp;
 
+import chatapp.handlers.LoginHandler;
 import chatapp.handlers.RegisterHandler;
 import chatapp.handlers.UserHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -50,6 +51,7 @@ public class AppTest
             server = HttpServer.create(new InetSocketAddress(PORT), 0);
             server.createContext("/register", new RegisterHandler(connection));
             server.createContext("/users", new UserHandler(connection));
+            server.createContext("/login", new LoginHandler(connection));
             server.start();
         } catch (IOException pException)
         {
@@ -71,6 +73,9 @@ public class AppTest
                 "{\"user_id\":1,\"username\":\"Alice\"}", "{\"username\": \"Alice\", \"password\": \"alice_pwd\"}");
         sendRequestAndAssertResult("Add new Bob user", RequestMethodEnum.POST, "/register", 200,
                 "{\"user_id\":2,\"username\":\"Bob\"}", "{\"username\": \"Bob\", \"password\": \"bob_pwd\"}");
+        sendRequestAndAssertResult("Add new Charlie user", RequestMethodEnum.POST, "/register", 200,
+                "{\"user_id\":3,\"username\":\"Charlie\"}",
+                "{\"username\": \"Charlie\", \"password\": \"charlie_pwd\"}");
         sendRequestAndAssertResult("Add existing Bob user", RequestMethodEnum.POST, "/register", 200,
                 "{\"msg\":\"User Bob already exists.\"}", "{\"username\": \"Bob\", \"password\": \"bob_pwd\"}");
     }
@@ -80,7 +85,36 @@ public class AppTest
     public void testListUsers()
     {
         sendRequestAndAssertResult("List users", RequestMethodEnum.GET, "/users", 200,
-                "[{\"user_id\":1,\"username\":\"Alice\"},{\"user_id\":2,\"username\":\"Bob\"}]");
+                "[{\"user_id\":1,\"username\":\"Alice\"},{\"user_id\":2,\"username\":\"Bob\"},{\"user_id\":3,\"username\":\"Charlie\"}]");
+    }
+
+    @Test
+    @Order(3)
+    public void testLogin()
+    {
+        sendRequestAndAssertResult("Test login with non existing user", RequestMethodEnum.POST, "/login", 200,
+                "{\"msg\":\"User Louis doesn't exist.\"}", "{\"username\": \"Louis\",\"password\": \"louis_pwd\"}");
+        sendRequestAndAssertResult("Test login with wrong password", RequestMethodEnum.POST, "/login", 200,
+                "{\"msg\":\"Wrong password for Alice\"}", "{\"username\": \"Alice\",\"password\": \"wrong_pwd\"}");
+        sendRequestAndAssertResult("Test login with correct password", RequestMethodEnum.POST, "/login", 200,
+                "{\"user_id\":1,\"username\":\"Alice\"}", "{\"username\": \"Alice\",\"password\": \"alice_pwd\"}");
+    }
+
+    @Test
+    @Order(4)
+    public void testUpdateUser()
+    {
+        sendRequestAndAssertResult("Test update user", RequestMethodEnum.PUT, "/users/1", 200,
+                "{\"msg\":\"Password successfully updated\"}",
+                "{\"currentPassword\":\"alice_pwd\",\"password\": \"new_alice_pwd\"}");
+    }
+
+    @Test
+    @Order(5)
+    public void testRemoveUser()
+    {
+        sendRequestAndAssertResult("Test remove user", RequestMethodEnum.DELETE, "/users/1", 200,
+                "{\"msg\":\"User successfully deleted.\"}");
     }
 
     private void sendRequestAndAssertResult(String pDescription, RequestMethodEnum pMethod, String pEndpoint,
@@ -92,6 +126,7 @@ public class AppTest
     private void sendRequestAndAssertResult(String pDescription, RequestMethodEnum pMethod, String pEndpoint,
                                             int pExpectedStatusCode, String pExpectedResult, String pBody)
     {
+        System.out.println(pDescription);
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = null;
         switch (pMethod)
