@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class AppTest
 {
     private static HttpServer server;
-    private static final int PORT = 9000;
+    private static final int PORT = 9230;
     private final String DOMAIN = "http://localhost:";
 
     @BeforeAll

@@ -3,6 +3,9 @@ package chatapp;
 import chatapp.handlers.*;
 import com.sun.net.httpserver.HttpServer;
 import io.github.cdimascio.dotenv.Dotenv;
+import io.prometheus.metrics.core.metrics.Counter;
+import io.prometheus.metrics.exporter.httpserver.HTTPServer;
+import io.prometheus.metrics.instrumentation.jvm.JvmMetrics;
 import org.glassfish.tyrus.server.Server;
 
 import java.io.IOException;
@@ -22,16 +25,48 @@ public class JavaServer
         String password = dotenv.get("DB_PASSWORD");
         Connection connection = Postgres.connectToDatabase(dbname, user, password, "localhost", "5432");
 
+        JvmMetrics.builder().register();
+
+        Counter requestCounter = Counter.builder()
+                .name("http_requests_total")
+                .help("Total number of HTTP requests")
+                .labelNames("method", "status")
+                .register();
+
         try
         {
+            /* Start metric endpoint */
+            HTTPServer.builder()
+                    .port(9091)
+                    .buildAndStart();
+
+            /* Start chat server */
             HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
             System.out.println("Server started on port " + port);
-            server.createContext("/register", new RegisterHandler(connection));
-            server.createContext("/login", new LoginHandler(connection));
-            server.createContext("/logout", new LogoutHandler(connection));
-            server.createContext("/chat", new ChatHandler(connection));
-            server.createContext("/message", new MessageHandler(connection));
-            server.createContext("/users", new UserHandler(connection));
+            server.createContext(
+                    "/register",
+                    new MetricsHandler(new UserHandler(connection), requestCounter)
+            );
+            server.createContext(
+                    "/login",
+                    new MetricsHandler(new LoginHandler(connection), requestCounter)
+            );
+            server.createContext(
+                    "/logout",
+                    new MetricsHandler(new LogoutHandler(connection), requestCounter)
+            );
+            server.createContext(
+                    "/chat",
+                    new MetricsHandler(new ChatHandler(connection), requestCounter)
+            );
+            server.createContext(
+                    "/message",
+                    new MetricsHandler(new MessageHandler(connection), requestCounter)
+            );
+            server.createContext(
+                    "/users",
+                    new MetricsHandler(new UserHandler(connection), requestCounter)
+            );
             server.setExecutor(null);
             server.start();
         } catch (IOException e)
@@ -39,6 +74,7 @@ public class JavaServer
             throw new RuntimeException(e);
         }
 
+        /* Start websocket */
         Server server = new Server("localhost", socketPort, "/", null, WebSocketServer.class);
         try
         {
@@ -47,7 +83,7 @@ public class JavaServer
             Thread.currentThread().join();
         } catch (Exception e)
         {
-            System.out.println("Error starting server: " + e.getMessage());
+            System.out.println("Error starting websocket: " + e.getMessage());
         }
     }
 }
