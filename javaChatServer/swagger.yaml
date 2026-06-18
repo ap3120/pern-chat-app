@@ -1,0 +1,500 @@
+openapi: 3.0.3
+info:
+  title: Swagger Chat App - OpenAPI 3.0
+  description: |-
+    This is a chat app Server based on the OpenAPI 3.0 specification.
+    
+    Some useful links:
+    - [The chat app repository](https://github.com/ap3120/pern-chat-app/)
+  version: 1.0.0
+
+paths:
+  /register:
+    post:
+      tags:
+        - register
+      summary: Register a new user
+      description: Register a new user
+      operationId: registerUser
+      requestBody:
+        description: Register a new user
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: "Alice"
+                password:
+                  type: string
+                  example: 'mdp_alice'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: integer
+                    format: int32
+                    example: 65
+                  username:
+                    type: string
+                    example: 'Louis'
+    
+  /users:
+    get:
+      tags:
+        - users
+      summary: Get users
+      description: Get all users
+      operationId: getUsers
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    user_id:
+                      type: integer
+                      format: int32
+                      example: 2
+                    username:
+                      type: string
+                      example: "Alice"
+  /users/{user_id}:
+    put:
+      tags:
+        - users
+      summary: Update a user
+      description: Change a user password.
+      operationId: updateUserById
+      parameters:
+        - name: user_id
+          in: path
+          description: The id of the user to update
+          required: true
+          schema:
+            type: integer
+            format: int32
+            example: 2
+      requestBody:
+        description: Update a user
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                currentPassword:
+                  description: the current password
+                  type: string
+                  example: "mdp_alice_user"
+                password:
+                  description: the new password
+                  type: string
+                  example: "mdp_alice"
+        required: true
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "Password successfully updated"
+        '401':
+          description: Incorrect password
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "Incorrect password."
+    delete:
+      tags:
+        - users
+      summary: Delete a user
+      description: Delete a user by id
+      operationId: deleteUserById
+      parameters:
+        - name: user_id
+          in: path
+          description: The id of the user to delete
+          required: true
+          schema:
+            type: integer
+            format: int32
+            example: 2
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "User successfully deleted."
+        '404':
+          description: User does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "User does not exist."
+  /login:
+    post:
+      tags:
+        - login
+      summary: Login a user
+      description: Login a user
+      operationId: loginUser
+      requestBody:
+        description: Login a user
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: "Alice"
+                password:
+                  type: string
+                  example: 'mdp_alice'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: integer
+                    format: int32
+                    example: 65
+                  username:
+                    type: string
+                    example: 'Louis'
+        '401':
+          description: Incorrect password
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "Wrong password for Louis"
+  /chat:
+    post:
+      tags:
+        - chat
+      summary: Create a new chat
+      operationId: createChat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                created_by:
+                  description: The id of the chat initiator
+                  type: integer
+                  format: int32
+                  example: 2
+        required: true
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/chats'
+  /chat/{user_id}:
+    get:
+      tags:
+        - chat
+      summary: Returns all the chats of a user
+      description: Returns all the chats where the user participates
+      parameters:
+        - name: user_id
+          in: path
+          description: The id of the user
+          required: true
+          schema:
+            type: integer
+            format: int32
+            example: 2
+      operationId: getUserChats
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    user_id:
+                      description: The user id
+                      type: integer
+                      format: int32
+                      example: 22
+                    created_at:
+                      description: The timestamp of the chat creation
+                      type: object
+                      example: "2024-09-01 14:54:34.572017"
+                    created_by:
+                      description: The id of the chat initiator
+                      type: integer
+                      format: int32
+                      example: 23
+                    chat_id:
+                      type: integer
+                      format: int32
+                      example: 45
+  /chat/users_chats:
+    post:
+      tags:
+        - chat
+      summary: Add a participant to a chat
+      description: Add a participant to a chat
+      operationId: addParticipantToChat
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: integer
+                    format: int32
+                    example: 28
+                  chat_id:
+                    type: integer
+                    format: int32
+                    example: 31
+  /chat/users_chats/{chat_id}/{user_id}:
+    get:
+      tags:
+        - chat
+      summary: Return the other chat participant
+      description: Return the other chat participant
+      parameters:
+        - name: chat_id
+          in: path
+          description: The id of the chat
+          required: true
+          schema:
+            type: integer
+            format: int32
+            example: 31
+        - name: user_id
+          in: path
+          description: The id of the user
+          required: true
+          schema:
+            type: integer
+            format: int32
+            example: 2
+      operationId: getOtherChatParticipant
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: integer
+                    format: int32
+                    example: 27
+                  username:
+                    type: string
+                    example: "Louis"
+  /message:
+    post:
+      tags:
+        - message
+      summary: Create a message
+      description: Create a message
+      operationId: createMessage
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                  example: "Hello there"
+                sender_id:
+                  type: string
+                  example: "65"
+                sender_username:
+                  type: string
+                  example: "Louis"
+                receiver_id:
+                  type: integer
+                  format: int32
+                  example: 28
+                receiver_username:
+                  type: string
+                  example: "Alice"
+                chat_id:
+                  type: integer
+                  format: int32
+                  example: 31
+        required: true
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sender_username:
+                    type: string
+                    example: "Louis"
+                  receiver_id:
+                    type: integer
+                    format: int32
+                    example: 28
+                  send_at:
+                    type: object
+                    example: "2026-06-18 23:30:56.032241"
+                  message_id:
+                    type: integer
+                    format: int32
+                    example: 41
+                  content:
+                    type: string
+                    example: "Hello there"
+                  sender_id:
+                    type: integer
+                    format: int32
+                    example: 65
+                  chat_id:
+                    type: integer
+                    format: int32
+                    example: 31
+                  receiver_username:
+                    type: string
+                    example: "Alice"
+  /message/{chat_id}:
+    get:
+      tags:
+        - message
+      summary: Return all the messages from a chat
+      description: Return all the messages from a chat
+      parameters:
+        - name: chat_id
+          in: path
+          description: The id of the chat
+          required: true
+          schema:
+            type: integer
+            format: int32
+            example: 31
+      operationId: getMessagesFromChat
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/messages'
+components:
+  schemas:
+    users:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          format: int32
+          example: 10
+        username:
+          type: string
+          example: Alice
+        password:
+          type: string
+          example: 'mdp_alice'
+      xml:
+        name: user
+    chats:
+      type: object
+      properties:
+        chat_id:
+          type: integer
+          format: int32
+          example: 3
+        created_by:
+          type: integer
+          format: int32
+          example: 65
+        created_at:
+          type: object
+          example: "2026-06-18 20:18:23.539539"
+      xml:
+        name: chat
+    messages:
+      type: object
+      properties:
+        message_id:
+          type: integer
+          format: int32
+          example: 10
+        content:
+          type: string
+          example: Hello there
+        sender_id:
+          type: integer
+          format: int32
+        chat_id:
+          type: integer
+          format: int32
+        send_at:
+          type: object
+        sender_username:
+          type: string
+        receiver_id:
+          type: integer
+          format: int32
+        receiver_username:
+          type: string
+      xml:
+        name: messages
+    users_chats:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          format: int32
+        chat_id:
+          type: integer
+          format: int32

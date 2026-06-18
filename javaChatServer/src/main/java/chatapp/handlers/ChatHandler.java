@@ -44,12 +44,9 @@ public class ChatHandler extends AbstractHandler implements HttpHandler
             requestBodyReader.close();
             String body = requestBody.toString();
             JSONObject jsonBody = new JSONObject(body);
-            //System.out.println(jsonBody.get("created_by"));
             JSONObject jsonResponse = Postgres.addToChat(connection,
                     Integer.parseInt((String) jsonBody.get("created_by")));
-            //System.out.println(jsonResponse.toString());
             response = jsonResponse != null ? jsonResponse.toString() : null;
-            //System.out.println(response);
         } else if ((arrayPath.length == 3))
         {
             if (httpExchange.getRequestMethod().equalsIgnoreCase("POST"))

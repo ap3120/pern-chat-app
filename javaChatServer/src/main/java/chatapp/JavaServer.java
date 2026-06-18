@@ -45,7 +45,7 @@ public class JavaServer
             System.out.println("Server started on port " + port);
             server.createContext(
                     "/register",
-                    new MetricsHandler(new UserHandler(connection), requestCounter)
+                    new MetricsHandler(new RegisterHandler(connection), requestCounter)
             );
             server.createContext(
                     "/login",

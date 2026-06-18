@@ -98,20 +98,20 @@ public class Postgres
     }
 
     /**
-     * Read from chats
+     * Get all the chats of a user
      *
      * @param conn
-     * @param id
+     * @param userId
      * @return elements from chats table
      */
-    public static JSONArray readFromChats(Connection conn, int id)
+    public static JSONArray readFromChats(Connection conn, int userId)
     {
         Statement statement;
         try
         {
             String query = String.format(
                     "select * from chats join users_chats on chats.chat_id = users_chats.chat_id where users_chats.user_id = '%s';",
-                    id);
+                    userId);
             statement = conn.createStatement();
             ResultSet rs = statement.executeQuery(query);
             return convertResultSetToJson(rs);
@@ -123,7 +123,7 @@ public class Postgres
     }
 
     /**
-     * Get user from a chat
+     * Returns the other participant in the specified chat for the given user
      *
      * @param conn
      * @param chat_id
