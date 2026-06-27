@@ -117,6 +117,28 @@ public class AppTest
                 "{\"msg\":\"User successfully deleted.\"}");
     }
 
+    /**
+     * Regression test for the SQL injection that the string-concatenated queries allowed.
+     * A username carrying a DROP TABLE payload must be stored as a literal value, and the
+     * users table must still exist and be intact afterwards.
+     */
+    @Test
+    @Order(6)
+    public void testSqlInjectionIsNeutralized()
+    {
+        // Users 2 (Bob) and 3 (Charlie) remain after the previous tests; this becomes user 4.
+        sendRequestAndAssertResult("Register a user with a SQL injection payload as username",
+                RequestMethodEnum.POST, "/register", 200,
+                "{\"user_id\":4,\"username\":\"Mallory'); DROP TABLE users; --\"}",
+                "{\"username\": \"Mallory'); DROP TABLE users; --\", \"password\": \"mallory_pwd\"}");
+
+        // If the payload had executed, this query would fail or return fewer rows.
+        sendRequestAndAssertResult("Users table is intact after the injection attempt",
+                RequestMethodEnum.GET, "/users", 200,
+                "[{\"user_id\":2,\"username\":\"Bob\"},{\"user_id\":3,\"username\":\"Charlie\"}," +
+                        "{\"user_id\":4,\"username\":\"Mallory'); DROP TABLE users; --\"}]");
+    }
+
     private void sendRequestAndAssertResult(String pDescription, RequestMethodEnum pMethod, String pEndpoint,
                                             int pExpectedStatusCode, String pExpectedResult)
     {

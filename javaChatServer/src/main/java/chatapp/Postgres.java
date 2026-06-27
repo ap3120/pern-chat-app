@@ -3,6 +3,7 @@ package chatapp;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.mindrot.jbcrypt.BCrypt;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -45,29 +46,45 @@ public class Postgres
      */
     public static JSONObject addToChat(Connection conn, int created_by)
     {
-        Statement statement;
+        boolean originalAutoCommit = true;
         try
         {
+            originalAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+
             LocalDateTime created_at = LocalDateTime.now();
-            String query = String.format("insert into chats (created_by, created_at) values ('%s', '%s') returning *;",
-                    created_by, created_at);
-            statement = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-            ResultSet rs = statement.executeQuery(query);
-            rs.next();
-            String chat_id = rs.getString("chat_id");
-            String second_query = String.format("insert into users_chats (user_id, chat_id) values ('%s', '%s');",
-                    created_by, chat_id);
-            Statement second_statement = conn.createStatement();
-            second_statement.executeUpdate(second_query);
+            JSONObject chat;
+            String chatQuery = "insert into chats (created_by, created_at) values (?, ?) returning *;";
+            try (PreparedStatement statement = conn.prepareStatement(chatQuery))
+            {
+                statement.setInt(1, created_by);
+                statement.setTimestamp(2, Timestamp.valueOf(created_at));
+                try (ResultSet rs = statement.executeQuery())
+                {
+                    JSONArray result = convertResultSetToJson(rs);
+                    chat = (JSONObject) result.get(0);
+                }
+            }
 
-            rs.beforeFirst();
+            int chat_id = chat.getInt("chat_id");
+            String linkQuery = "insert into users_chats (user_id, chat_id) values (?, ?);";
+            try (PreparedStatement linkStatement = conn.prepareStatement(linkQuery))
+            {
+                linkStatement.setInt(1, created_by);
+                linkStatement.setInt(2, chat_id);
+                linkStatement.executeUpdate();
+            }
 
-            JSONArray result = convertResultSetToJson(rs);
-            return (JSONObject) result.get(0);
+            conn.commit();
+            return chat;
         } catch (Exception e)
         {
+            rollbackQuietly(conn);
             e.printStackTrace();
             return null;
+        } finally
+        {
+            restoreAutoCommit(conn, originalAutoCommit);
         }
     }
 
@@ -81,15 +98,16 @@ public class Postgres
      */
     public static JSONObject addToUsersChats(Connection conn, int user_id, int chat_id)
     {
-        Statement statement;
-        try
+        String query = "insert into users_chats (user_id, chat_id) values (?, ?) returning *;";
+        try (PreparedStatement statement = conn.prepareStatement(query))
         {
-            String query = String.format("insert into users_chats (user_id, chat_id) values ('%s', '%s') returning *;",
-                    user_id, chat_id);
-            statement = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-            ResultSet rs = statement.executeQuery(query);
-            JSONArray result = convertResultSetToJson(rs);
-            return (JSONObject) result.get(0);
+            statement.setInt(1, user_id);
+            statement.setInt(2, chat_id);
+            try (ResultSet rs = statement.executeQuery())
+            {
+                JSONArray result = convertResultSetToJson(rs);
+                return (JSONObject) result.get(0);
+            }
         } catch (Exception e)
         {
             e.printStackTrace();
@@ -106,15 +124,14 @@ public class Postgres
      */
     public static JSONArray readFromChats(Connection conn, int userId)
     {
-        Statement statement;
-        try
+        String query = "select * from chats join users_chats on chats.chat_id = users_chats.chat_id where users_chats.user_id = ?;";
+        try (PreparedStatement statement = conn.prepareStatement(query))
         {
-            String query = String.format(
-                    "select * from chats join users_chats on chats.chat_id = users_chats.chat_id where users_chats.user_id = '%s';",
-                    userId);
-            statement = conn.createStatement();
-            ResultSet rs = statement.executeQuery(query);
-            return convertResultSetToJson(rs);
+            statement.setInt(1, userId);
+            try (ResultSet rs = statement.executeQuery())
+            {
+                return convertResultSetToJson(rs);
+            }
         } catch (Exception e)
         {
             e.printStackTrace();
@@ -132,16 +149,16 @@ public class Postgres
      */
     public static JSONObject getUser(Connection conn, int chat_id, int user_id)
     {
-        Statement statement;
-        try
+        String query = "select users.user_id, users.username from users join users_chats on users.user_id = users_chats.user_id where users_chats.chat_id = ? and users_chats.user_id != ?;";
+        try (PreparedStatement statement = conn.prepareStatement(query))
         {
-            String query = String.format(
-                    "select users.user_id, users.username from users join users_chats on users.user_id = users_chats.user_id where users_chats.chat_id = '%s' and users_chats.user_id != '%s';",
-                    chat_id, user_id);
-            statement = conn.createStatement();
-            ResultSet rs = statement.executeQuery(query);
-            JSONArray result = convertResultSetToJson(rs);
-            return (JSONObject) result.get(0);
+            statement.setInt(1, chat_id);
+            statement.setInt(2, user_id);
+            try (ResultSet rs = statement.executeQuery())
+            {
+                JSONArray result = convertResultSetToJson(rs);
+                return (JSONObject) result.get(0);
+            }
         } catch (Exception e)
         {
             return null;
@@ -156,11 +173,10 @@ public class Postgres
      */
     public static JSONArray getUsers(Connection conn)
     {
-        Statement statement;
-        try
+        String query = "Select user_id, username from users order by user_id asc;";
+        try (PreparedStatement statement = conn.prepareStatement(query);
+             ResultSet rs = statement.executeQuery())
         {
-            statement = conn.createStatement();
-            ResultSet rs = statement.executeQuery("Select user_id, username from users order by user_id asc;");
             return convertResultSetToJson(rs);
         } catch (Exception e)
         {
@@ -180,31 +196,36 @@ public class Postgres
      */
     public static JSONObject updateUser(Connection conn, int user_id, String prevPasswordToCheck, String newPassword)
     {
-        Statement statement;
         try
         {
-            String query = String.format("Select password from users where user_id = '%s';", user_id);
-            statement = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-            ResultSet rs = statement.executeQuery(query);
-            if (!rs.first())
+            String selectQuery = "Select password from users where user_id = ?;";
+            String storedPassword;
+            try (PreparedStatement statement = conn.prepareStatement(selectQuery))
             {
-                return infoMessage("User of user_id " + user_id + " doesn't exist.");
+                statement.setInt(1, user_id);
+                try (ResultSet rs = statement.executeQuery())
+                {
+                    if (!rs.next())
+                    {
+                        return infoMessage("User of user_id " + user_id + " doesn't exist.");
+                    }
+                    storedPassword = rs.getString("password");
+                }
             }
-            rs.beforeFirst();
-            JSONArray res = convertResultSetToJson(rs);
-            JSONObject result = (JSONObject) res.get(0);
-            if (result.get("password").equals(hash(prevPasswordToCheck)))
-            {
-                String hashedNewPassword = hash(newPassword);
-                String newQuery = String.format("update users set password = '%s' where user_id = '%s' returning *;",
-                        hashedNewPassword, user_id);
-                Statement newStatement = conn.createStatement();
-                ResultSet newRs = newStatement.executeQuery(newQuery);
-                if (newRs != null) return infoMessage("Password successfully updated");
-                return infoMessage("Something went wrong, password couldn't be updated.");
-            } else
+
+            if (!passwordMatches(prevPasswordToCheck, storedPassword))
             {
                 return infoMessage("Incorrect password.");
+            }
+
+            String updateQuery = "update users set password = ? where user_id = ?;";
+            try (PreparedStatement updateStatement = conn.prepareStatement(updateQuery))
+            {
+                updateStatement.setString(1, hash(newPassword));
+                updateStatement.setInt(2, user_id);
+                int updated = updateStatement.executeUpdate();
+                if (updated > 0) return infoMessage("Password successfully updated");
+                return infoMessage("Something went wrong, password couldn't be updated.");
             }
         } catch (Exception e)
         {
@@ -222,12 +243,11 @@ public class Postgres
      */
     public static JSONObject deleteUser(Connection conn, int user_id)
     {
-        Statement statement;
-        try
+        String query = "delete from users where user_id = ?";
+        try (PreparedStatement statement = conn.prepareStatement(query))
         {
-            String query = String.format("delete from users where user_id = '%s'", user_id);
-            statement = conn.createStatement();
-            statement.executeUpdate(query);
+            statement.setInt(1, user_id);
+            statement.executeUpdate();
             return infoMessage("User successfully deleted.");
         } catch (Exception e)
         {
@@ -251,18 +271,22 @@ public class Postgres
     public static JSONObject addMessage(Connection conn, String content, int sender_id, String sender_username,
                                         int receiver_id, String receiver_username, int chat_id)
     {
-        Statement statement;
         LocalDateTime send_at = LocalDateTime.now();
-        try
+        String query = "insert into messages (content, sender_id, sender_username, receiver_id, receiver_username, chat_id, send_at) values (?, ?, ?, ?, ?, ?, ?) returning *;";
+        try (PreparedStatement statement = conn.prepareStatement(query))
         {
-            String query = String.format(
-                    "insert into messages (content, sender_id, sender_username, receiver_id, receiver_username, chat_id, send_at) values('%s', '%s', '%s', '%s', '%s', '%s', '%s') returning *;",
-                    content, sender_id, sender_username, receiver_id, receiver_username, chat_id, send_at
-            );
-            statement = conn.createStatement();
-            ResultSet rs = statement.executeQuery(query);
-            JSONArray result = convertResultSetToJson(rs);
-            return (JSONObject) result.get(0);
+            statement.setString(1, content);
+            statement.setInt(2, sender_id);
+            statement.setString(3, sender_username);
+            statement.setInt(4, receiver_id);
+            statement.setString(5, receiver_username);
+            statement.setInt(6, chat_id);
+            statement.setTimestamp(7, Timestamp.valueOf(send_at));
+            try (ResultSet rs = statement.executeQuery())
+            {
+                JSONArray result = convertResultSetToJson(rs);
+                return (JSONObject) result.get(0);
+            }
         } catch (Exception e)
         {
             return null;
@@ -278,13 +302,14 @@ public class Postgres
      */
     public static JSONArray getMessagesFromChat(Connection conn, int chat_id)
     {
-        Statement statement;
-        try
+        String query = "select * from messages where chat_id = ? order by send_at";
+        try (PreparedStatement statement = conn.prepareStatement(query))
         {
-            String query = String.format("select * from messages where chat_id = '%s' order by send_at", chat_id);
-            statement = conn.createStatement();
-            ResultSet rs = statement.executeQuery(query);
-            return convertResultSetToJson(rs);
+            statement.setInt(1, chat_id);
+            try (ResultSet rs = statement.executeQuery())
+            {
+                return convertResultSetToJson(rs);
+            }
         } catch (Exception e)
         {
             return null;
@@ -300,17 +325,14 @@ public class Postgres
      */
     public static boolean userExists(Connection conn, String username)
     {
-        Statement statement;
-        try
+        String query = "select 1 from users where username = ?;";
+        try (PreparedStatement statement = conn.prepareStatement(query))
         {
-            String query = String.format("select * from users where username = '%s';", username);
-            statement = conn.createStatement();
-            ResultSet rs = statement.executeQuery(query);
-            if (rs.next())
+            statement.setString(1, username);
+            try (ResultSet rs = statement.executeQuery())
             {
-                return true;
+                return rs.next();
             }
-            return false;
         } catch (Exception e)
         {
             e.printStackTrace();
@@ -328,18 +350,22 @@ public class Postgres
      */
     public static JSONObject addUser(Connection conn, String username, String password)
     {
-        Statement statement;
         try
         {
             if (userExists(conn, username)) return infoMessage("User " + username + " already exists.");
             String hashedPassword = hash(password);
-            String query = String.format("insert into users (username, password) values ('%s', '%s') returning *;",
-                    username, hashedPassword);
-            statement = conn.createStatement();
-            ResultSet rs = statement.executeQuery(query);
-            JSONObject result = convertResultSetToJson(rs).getJSONObject(0);
-            result.remove("password");
-            return result;
+            String query = "insert into users (username, password) values (?, ?) returning *;";
+            try (PreparedStatement statement = conn.prepareStatement(query))
+            {
+                statement.setString(1, username);
+                statement.setString(2, hashedPassword);
+                try (ResultSet rs = statement.executeQuery())
+                {
+                    JSONObject result = convertResultSetToJson(rs).getJSONObject(0);
+                    result.remove("password");
+                    return result;
+                }
+            }
         } catch (Exception e)
         {
             return infoMessage("Something went wrong with the server.");
@@ -348,21 +374,31 @@ public class Postgres
 
     public static JSONObject login(Connection conn, String username, String password)
     {
-        Statement statement;
         try
         {
-            if (!userExists(conn, username)) return infoMessage("User " + username + " doesn't exist.");
-            String query = String.format("select * from users where username = '%s';", username);
-            statement = conn.createStatement();
-            ResultSet rs = statement.executeQuery(query);
-            JSONObject result = convertResultSetToJson(rs).getJSONObject(0);
-            String dbPassword = result.getString("password");
-            if (dbPassword.equals(hash(password)))
+            String query = "select * from users where username = ?;";
+            try (PreparedStatement statement = conn.prepareStatement(query))
             {
-                result.remove("password");
-                return result;
+                statement.setString(1, username);
+                try (ResultSet rs = statement.executeQuery())
+                {
+                    JSONArray rows = convertResultSetToJson(rs);
+                    if (rows.length() == 0) return infoMessage("User " + username + " doesn't exist.");
+                    JSONObject result = rows.getJSONObject(0);
+                    String dbPassword = result.getString("password");
+                    if (!passwordMatches(password, dbPassword))
+                    {
+                        return infoMessage("Wrong password for " + username);
+                    }
+                    // Transparently upgrade legacy SHA-512 hashes to bcrypt on a successful login.
+                    if (isLegacyHash(dbPassword))
+                    {
+                        upgradePasswordHash(conn, result.getInt("user_id"), password);
+                    }
+                    result.remove("password");
+                    return result;
+                }
             }
-            return infoMessage("Wrong password for " + username);
         } catch (Exception e)
         {
             return infoMessage("Something went wrong with the server.");
@@ -374,9 +410,8 @@ public class Postgres
      * @param conn the connection object
      */
     public static void cleanDatabase(Connection conn) {
-        Statement statement;
-        try {
-            statement = conn.createStatement();
+        try (Statement statement = conn.createStatement())
+        {
             statement.executeUpdate("TRUNCATE TABLE users CASCADE;");
             statement.executeUpdate("ALTER SEQUENCE users_user_id_seq RESTART WITH 1;");
             statement.executeUpdate("ALTER SEQUENCE messages_message_id_seq RESTART WITH 1;");
@@ -393,7 +428,59 @@ public class Postgres
         return error;
     }
 
+    /**
+     * Hash a plaintext password with bcrypt (salted, work-factored).
+     */
     private static String hash(String password)
+    {
+        return BCrypt.hashpw(password, BCrypt.gensalt());
+    }
+
+    /**
+     * Verify a plaintext password against a stored hash. Supports both new bcrypt
+     * hashes and the legacy unsalted SHA-512 hex hashes so accounts created before
+     * the migration keep working until they are upgraded on next login.
+     */
+    private static boolean passwordMatches(String plaintext, String storedHash)
+    {
+        if (plaintext == null || storedHash == null) return false;
+        if (isLegacyHash(storedHash))
+        {
+            String legacy = legacySha512(plaintext);
+            return legacy != null && legacy.equalsIgnoreCase(storedHash);
+        }
+        try
+        {
+            return BCrypt.checkpw(plaintext, storedHash);
+        } catch (IllegalArgumentException e)
+        {
+            return false;
+        }
+    }
+
+    /**
+     * Legacy hashes are exactly 128 hex characters (SHA-512); bcrypt hashes start with "$2".
+     */
+    private static boolean isLegacyHash(String storedHash)
+    {
+        return storedHash != null && storedHash.matches("[0-9a-fA-F]{128}");
+    }
+
+    private static void upgradePasswordHash(Connection conn, int user_id, String plaintext)
+    {
+        String query = "update users set password = ? where user_id = ?;";
+        try (PreparedStatement statement = conn.prepareStatement(query))
+        {
+            statement.setString(1, hash(plaintext));
+            statement.setInt(2, user_id);
+            statement.executeUpdate();
+        } catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+    }
+
+    private static String legacySha512(String password)
     {
         try
         {
@@ -408,6 +495,28 @@ public class Postgres
         } catch (Exception e)
         {
             return null;
+        }
+    }
+
+    private static void rollbackQuietly(Connection conn)
+    {
+        try
+        {
+            if (conn != null) conn.rollback();
+        } catch (SQLException e)
+        {
+            e.printStackTrace();
+        }
+    }
+
+    private static void restoreAutoCommit(Connection conn, boolean autoCommit)
+    {
+        try
+        {
+            if (conn != null) conn.setAutoCommit(autoCommit);
+        } catch (SQLException e)
+        {
+            e.printStackTrace();
         }
     }
 

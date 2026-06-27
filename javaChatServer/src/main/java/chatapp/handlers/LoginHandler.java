@@ -8,7 +8,8 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.HttpCookie;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 
 public class LoginHandler extends AbstractHandler implements HttpHandler {
@@ -30,13 +31,18 @@ public class LoginHandler extends AbstractHandler implements HttpHandler {
             String body = requestBody.toString();
             JSONObject jsonBody = new JSONObject(body);
             JSONObject jsonResponse = Postgres.login(connection, (String) jsonBody.get("username"), (String) jsonBody.get("password"));
+            if (jsonResponse == null) {
+                jsonResponse = new JSONObject().put("msg", "Something went wrong with the server.");
+            }
             String response = jsonResponse.toString();
 
-            // setting cookies
-            HttpCookie sessionCookie = new HttpCookie("session_id", (String) jsonBody.get("username"));
-            sessionCookie.setPath("/");
-            sessionCookie.setMaxAge(3600);
-            httpExchange.getResponseHeaders().add("Set-Cookie", sessionCookie.toString());
+            // Only set a session cookie when authentication actually succeeded. A successful
+            // login returns the user row (with user_id); failures return an {"msg": ...} object.
+            if (jsonResponse.has("user_id")) {
+                String username = URLEncoder.encode((String) jsonBody.get("username"), StandardCharsets.UTF_8.name());
+                String sessionCookie = "session_id=" + username + "; Path=/; Max-Age=3600; HttpOnly; SameSite=Lax";
+                httpExchange.getResponseHeaders().add("Set-Cookie", sessionCookie);
+            }
             sendResponseToClient(httpExchange, response, 200);
         } else {
             httpExchange.sendResponseHeaders(405, -1);
