@@ -21,7 +21,9 @@ public class MessageHandler extends AbstractHandler implements HttpHandler {
         String response = null;
 
         if (httpExchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
+            // OptionRequestHandler sends and closes the exchange; return so we do not send a second response.
             OptionRequestHandler.handle(httpExchange);
+            return;
         } else if (arrayPath.length == 2) {
             if (httpExchange.getRequestMethod().equalsIgnoreCase("POST")) {
                 InputStreamReader requestBodyReader = new InputStreamReader(httpExchange.getRequestBody(), "utf-8");
@@ -42,12 +44,12 @@ public class MessageHandler extends AbstractHandler implements HttpHandler {
                         (int) jsonBody.get("receiver_id"),
                         (String) jsonBody.get("receiver_username"),
                         (int) jsonBody.get("chat_id"));
-                response = jsonResponse.toString();
+                response = jsonResponse != null ? jsonResponse.toString() : null;
             }
         } else if (arrayPath.length == 3) {
             if (httpExchange.getRequestMethod().equalsIgnoreCase("GET")) {
                 JSONArray jsonResponse = Postgres.getMessagesFromChat(connection, Integer.parseInt(arrayPath[2]));
-                response = jsonResponse.toString();
+                response = jsonResponse != null ? jsonResponse.toString() : null;
             }
         }
         if (response != null) {

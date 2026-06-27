@@ -9,7 +9,6 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.sql.Connection;
 
 import static java.lang.Integer.parseInt;
@@ -29,7 +28,9 @@ public class ChatHandler extends AbstractHandler implements HttpHandler
         String response = null;
         if (httpExchange.getRequestMethod().equalsIgnoreCase("OPTIONS"))
         {
+            // OptionRequestHandler sends and closes the exchange; return so we do not send a second response.
             OptionRequestHandler.handle(httpExchange);
+            return;
         } else if (arrayPath.length == 2 && httpExchange.getRequestMethod().equalsIgnoreCase("POST"))
         {
             InputStreamReader requestBodyReader = new InputStreamReader(httpExchange.getRequestBody(), "utf-8");
@@ -78,11 +79,7 @@ public class ChatHandler extends AbstractHandler implements HttpHandler
         }
         if (response != null)
         {
-            httpExchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            httpExchange.sendResponseHeaders(200, response.length());
-            OutputStream outputStream = httpExchange.getResponseBody();
-            outputStream.write(response.getBytes());
-            outputStream.close();
+            sendResponseToClient(httpExchange, response, 200);
         } else
         {
             httpExchange.sendResponseHeaders(405, -1);

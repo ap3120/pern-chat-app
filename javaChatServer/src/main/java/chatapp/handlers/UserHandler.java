@@ -28,11 +28,13 @@ public class UserHandler extends AbstractHandler implements HttpHandler
 
         if (httpExchange.getRequestMethod().equalsIgnoreCase("OPTIONS"))
         {
+            // OptionRequestHandler sends and closes the exchange; return so we do not send a second response.
             OptionRequestHandler.handle(httpExchange);
+            return;
         } else if (httpExchange.getRequestMethod().equalsIgnoreCase("GET"))
         {
             JSONArray jsonResponse = Postgres.getUsers(connection);
-            response = jsonResponse.toString();
+            response = jsonResponse != null ? jsonResponse.toString() : null;
         } else if (httpExchange.getRequestMethod().equalsIgnoreCase("PUT"))
         {
             InputStreamReader requestBodyReader = new InputStreamReader(httpExchange.getRequestBody(), "utf-8");
@@ -49,11 +51,11 @@ public class UserHandler extends AbstractHandler implements HttpHandler
             JSONObject jsonBody = new JSONObject(body);
             JSONObject jsonResponse = Postgres.updateUser(connection, Integer.parseInt(pathArray[2]),
                     (String) jsonBody.get("currentPassword"), (String) jsonBody.get("password"));
-            response = jsonResponse.toString();
+            response = jsonResponse != null ? jsonResponse.toString() : null;
         } else if (httpExchange.getRequestMethod().equalsIgnoreCase("DELETE"))
         {
             JSONObject jsonResponse = Postgres.deleteUser(connection, Integer.parseInt(pathArray[2]));
-            response = jsonResponse.toString();
+            response = jsonResponse != null ? jsonResponse.toString() : null;
         }
 
         if (response != null)
