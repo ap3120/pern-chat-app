@@ -19,13 +19,16 @@ pipeline {
     }
     stage('Build') {
       steps {
-        // Build project.
-        dir('javaChatServer') {
-          sh '''
-            mvn clean install -DskipTests
-            pwd
-            '''
-        }
+        // Build inside the Java 17 Maven image (Javalin 7 / Jetty 12 require JDK 17),
+        // so the build no longer depends on the host JDK version.
+        sh '''
+          docker pull maven:3.9.9-eclipse-temurin-17
+          docker run --rm \
+          -v "$PWD":/workspace \
+          -w /workspace/javaChatServer \
+          maven:3.9.9-eclipse-temurin-17 \
+          mvn clean install -DskipTests
+          '''
       }
     }
     stage('Start database') {
@@ -53,7 +56,7 @@ pipeline {
     stage('Test') {
       steps {
         sh '''
-          docker pull maven:3.9.6-eclipse-temurin-11
+          docker pull maven:3.9.9-eclipse-temurin-17
           pwd
           docker run --rm \
           --network test-net \
@@ -63,7 +66,7 @@ pipeline {
           -e DB_TEST_USER=$DB_TEST_USER \
           -e DB_TEST_PASSWORD=$DB_TEST_PASSWORD \
           -e DB_HOST=$DB_HOST \
-          maven:3.9.6-eclipse-temurin-11 \
+          maven:3.9.9-eclipse-temurin-17 \
           mvn test
           '''
       }

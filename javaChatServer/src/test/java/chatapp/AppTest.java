@@ -1,19 +1,17 @@
 package chatapp;
 
-import chatapp.handlers.LoginHandler;
-import chatapp.handlers.RegisterHandler;
-import chatapp.handlers.UserHandler;
-import com.sun.net.httpserver.HttpServer;
+import com.zaxxer.hikari.HikariDataSource;
 import io.github.cdimascio.dotenv.Dotenv;
+import io.javalin.Javalin;
 import org.junit.jupiter.api.*;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.sql.Connection;
+import java.sql.SQLException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -24,7 +22,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class AppTest
 {
-    private static HttpServer server;
+    private static Javalin server;
+    private static HikariDataSource ds;
     private static final int PORT = 9230;
     private final String DOMAIN = "http://localhost:";
 
@@ -43,26 +42,26 @@ public class AppTest
             user = dotenv.get("DB_TEST_USER");
             password = dotenv.get("DB_TEST_PASSWORD");
         }
-        Connection connection = Postgres.connectToDatabase(dbname, user, password, host != null ? host : "localhost",
-                port != null ? port : "5432");
-        Postgres.cleanDatabase(connection);
-        try
+        ds = ChatApp.buildDataSource(host != null ? host : "localhost", port != null ? port : "5432",
+                dbname, user, password);
+        try (Connection connection = ds.getConnection())
         {
-            server = HttpServer.create(new InetSocketAddress(PORT), 0);
-            server.createContext("/register", new RegisterHandler(connection));
-            server.createContext("/users", new UserHandler(connection));
-            server.createContext("/login", new LoginHandler(connection));
-            server.start();
-        } catch (IOException pException)
+            Postgres.cleanDatabase(connection);
+        } catch (SQLException pException)
         {
-            System.out.println("Error starting server: " + pException.getMessage());
+            System.out.println("Error cleaning database: " + pException.getMessage());
         }
+        // Build from the same factory main() uses, so tests exercise the real routing
+        // (no Prometheus counter in tests -> pass null).
+        server = ChatApp.buildRestApp(ds, "http://localhost:3000", null);
+        server.start(PORT);
     }
 
     @AfterAll
     public static void clean()
     {
-        server.stop(0); // delay for stopping is zero
+        if (server != null) server.stop();
+        if (ds != null) ds.close();
     }
 
     @Test

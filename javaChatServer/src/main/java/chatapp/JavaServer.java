@@ -1,89 +1,57 @@
 package chatapp;
 
-import chatapp.handlers.*;
-import com.sun.net.httpserver.HttpServer;
+import com.zaxxer.hikari.HikariDataSource;
 import io.github.cdimascio.dotenv.Dotenv;
+import io.javalin.Javalin;
 import io.prometheus.metrics.core.metrics.Counter;
 import io.prometheus.metrics.exporter.httpserver.HTTPServer;
 import io.prometheus.metrics.instrumentation.jvm.JvmMetrics;
-import org.glassfish.tyrus.server.Server;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.sql.Connection;
 
 public class JavaServer
 {
-    private final static int port = 9000;
-    private final static int socketPort = 9200;
-
-    public static void main(String[] args)
+    public static void main(String[] args) throws IOException
     {
         Dotenv dotenv = Dotenv.load();
         String dbname = dotenv.get("DB_NAME");
         String user = dotenv.get("DB_USER");
         String password = dotenv.get("DB_PASSWORD");
-        Connection connection = Postgres.connectToDatabase(dbname, user, password, "localhost", "5432");
+        String dbHost = orDefault(dotenv.get("DB_HOST"), "localhost");
+        String dbPort = orDefault(dotenv.get("DB_PORT"), "5432");
+
+        int restPort = Integer.parseInt(orDefault(dotenv.get("SERVER_PORT"), "9000"));
+        int wsPort = Integer.parseInt(orDefault(dotenv.get("WEBSOCKET_PORT"), "9200"));
+        int metricsPort = Integer.parseInt(orDefault(dotenv.get("METRICS_PORT"), "9091"));
+        String corsOrigin = orDefault(dotenv.get("CORS_ORIGIN"), "http://localhost:3000");
+
+        HikariDataSource ds = ChatApp.buildDataSource(dbHost, dbPort, dbname, user, password);
 
         JvmMetrics.builder().register();
-
         Counter requestCounter = Counter.builder()
                 .name("http_requests_total")
                 .help("Total number of HTTP requests")
                 .labelNames("method", "status")
                 .register();
 
-        try
-        {
-            /* Start metric endpoint */
-            HTTPServer.builder()
-                    .port(9091)
-                    .buildAndStart();
+        // Prometheus metrics endpoint (unchanged port so prometheus.yml keeps scraping :9091).
+        HTTPServer.builder()
+                .port(metricsPort)
+                .buildAndStart();
 
-            /* Start chat server */
-            HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
-            System.out.println("Server started on port " + port);
-            server.createContext(
-                    "/register",
-                    new MetricsHandler(new RegisterHandler(connection), requestCounter)
-            );
-            server.createContext(
-                    "/login",
-                    new MetricsHandler(new LoginHandler(connection), requestCounter)
-            );
-            server.createContext(
-                    "/logout",
-                    new MetricsHandler(new LogoutHandler(connection), requestCounter)
-            );
-            server.createContext(
-                    "/chat",
-                    new MetricsHandler(new ChatHandler(connection), requestCounter)
-            );
-            server.createContext(
-                    "/message",
-                    new MetricsHandler(new MessageHandler(connection), requestCounter)
-            );
-            server.createContext(
-                    "/users",
-                    new MetricsHandler(new UserHandler(connection), requestCounter)
-            );
-            server.setExecutor(null);
-            server.start();
-        } catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
+        Javalin rest = ChatApp.buildRestApp(ds, corsOrigin, requestCounter);
+        rest.start(restPort);
+        System.out.println("REST server started on port " + restPort);
 
-        /* Start websocket */
-        Server server = new Server("localhost", socketPort, "/", null, WebSocketServer.class);
-        try
-        {
-            server.start();
-            System.out.println("WebSocket server started on ws://localhost:" + socketPort + "/ws");
-            Thread.currentThread().join();
-        } catch (Exception e)
-        {
-            System.out.println("Error starting websocket: " + e.getMessage());
-        }
+        // WebSocket runs as its own Javalin instance on the dedicated port the frontend expects,
+        // bound to localhost to match the previous Tyrus binding.
+        Javalin ws = ChatApp.buildWsApp();
+        ws.start("localhost", wsPort);
+        System.out.println("WebSocket server started on ws://localhost:" + wsPort + "/ws");
+    }
+
+    private static String orDefault(String value, String fallback)
+    {
+        return (value == null || value.isBlank()) ? fallback : value;
     }
 }
