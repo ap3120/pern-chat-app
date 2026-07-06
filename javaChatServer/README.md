@@ -30,7 +30,21 @@ A jacoco coverage report is generated in `target/site/jacoco/index.html`
 ## Jenkins
 run `systemctl status jenkins.service` to see if jenkins server is running</br>
 It should be running on `localhost:8080` by default.
+### Setting up jenkins pipeline
+Create a cloud and fill the following fields as follows:</br>
+`Docker Host URI`: `/path/to/docker.sock` So the jenkins agent container communicates with the docker daemon</br>
+`Mounts`:
+```
+type=bind,source=/var/run/docker.sock,target=/var/run/docker.sock
+type=bind,source=/var/lib/jenkins/workspace,target=/var/lib/jenkins/workspace
+```
+Binding the same paths is a standard solution when running docker outside docker.<br/>
+1. The jenkins agent container runs `docker run -v $WORKSPACE:/workspace`<br/>
+2. `$WORKSPACE` resolves to the agent container target `var/lib/jenkins/workspace`<br/>
+3. But the docker daemon runs on the host so it interpret `$WORKSPACE` as a host path.<br/>
+A clean approach is to make the paths identical
 
+`Remote File System Root`: `/var/lib/jenkins` Defines the root directory inside the agent container
 ## Grafana
 1. Create docker network (only once)</br>
 `docker network create chat-app-monitoring`
