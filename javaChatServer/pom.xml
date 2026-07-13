@@ -14,12 +14,6 @@
             <version>2.18.3</version>
         </dependency>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>3.8.1</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.glassfish.tyrus</groupId>
             <artifactId>tyrus-server</artifactId>
             <version>2.2.0</version>
@@ -50,10 +44,46 @@
             <artifactId>json</artifactId>
             <version>20231013</version>
         </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <version>0.8.14</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.prometheus</groupId>
+            <artifactId>prometheus-metrics-core</artifactId>
+            <version>1.3.6</version>
+        </dependency>
+        <dependency>
+            <groupId>io.prometheus</groupId>
+            <artifactId>prometheus-metrics-exporter-httpserver</artifactId>
+            <version>1.3.6</version>
+        </dependency>
+        <dependency>
+            <groupId>io.prometheus</groupId>
+            <artifactId>prometheus-metrics-instrumentation-jvm</artifactId>
+            <version>1.3.6</version>
+        </dependency>
     </dependencies>
 
     <build>
         <plugins>
+            <!-- Configuring surefire for junit 5 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+                <configuration>
+                    <useModulePath>false</useModulePath>
+                </configuration>
+            </plugin>
             <!-- Including dependencies in the classpath with maven-assembly-plugin -->
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
@@ -73,6 +103,34 @@
                         <phase>package</phase>
                         <goals>
                             <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>11</source>
+                    <target>11</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.14</version>
+                <executions>
+                    <execution>
+                        <id>default-prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>default-report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
                         </goals>
                     </execution>
                 </executions>

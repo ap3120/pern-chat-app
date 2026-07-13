@@ -39,7 +39,6 @@ export const Contacts = ({setContact, closeSocket}) => {
       console.log(error);
     }
   }
-
   const getChats = useCallback(async() => {
     try {
       const response = await fetch(`http://localhost:${PORT}/chat/${sessionStorage.getItem('user_id')}`);
@@ -52,6 +51,7 @@ export const Contacts = ({setContact, closeSocket}) => {
       console.log(error);
     }
   }, [getChatContact, PORT]);
+
 
   const handleClick = (chat, index) => {
     setSelectedIndex(index);
@@ -71,12 +71,12 @@ export const Contacts = ({setContact, closeSocket}) => {
         </Box>
       }
       <List sx={{p: 2}}>
-        {chats.map((chat, index) => (
-          <ListItem sx={getStyle(index)} key={index} onClick={() => handleClick(chat, index)}>
-            <AccountCircleIcon sx={{fontSize:'50px', marginRight:'20px'}}/>
-            <ListItemText>{chat.chat_contact}</ListItemText>
-          </ListItem>
-        ))}
+      {chats.map((chat, index) => (
+        <ListItem sx={getStyle(index)} key={index} onClick={() => handleClick(chat, index)}>
+          <AccountCircleIcon sx={{fontSize:'50px', marginRight:'20px'}}/>
+          <ListItemText>{chat.chat_contact}</ListItemText>
+        </ListItem>
+      ))}
       </List>
     </Box>
   )

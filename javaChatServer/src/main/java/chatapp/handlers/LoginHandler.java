@@ -8,13 +8,11 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.net.HttpCookie;
 import java.sql.Connection;
 
-public class LoginHandler implements HttpHandler {
-    private Connection connection;
-    public LoginHandler(Connection connection) {this.connection = connection;}
+public class LoginHandler extends AbstractHandler implements HttpHandler {
+    public LoginHandler(Connection connection) {super(connection);}
     @Override
     public void handle(HttpExchange httpExchange) throws IOException {
         if (httpExchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
@@ -39,11 +37,7 @@ public class LoginHandler implements HttpHandler {
             sessionCookie.setPath("/");
             sessionCookie.setMaxAge(3600);
             httpExchange.getResponseHeaders().add("Set-Cookie", sessionCookie.toString());
-            httpExchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            httpExchange.sendResponseHeaders(200, response.length());
-            OutputStream outputStreamResponse = httpExchange.getResponseBody();
-            outputStreamResponse.write(response.getBytes());
-            outputStreamResponse.close();
+            sendResponseToClient(httpExchange, response, 200);
         } else {
             httpExchange.sendResponseHeaders(405, -1);
         }

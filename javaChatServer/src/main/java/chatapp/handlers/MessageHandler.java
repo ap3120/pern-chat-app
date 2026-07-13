@@ -1,6 +1,5 @@
 package chatapp.handlers;
 
-import chatapp.Backend;
 import chatapp.Postgres;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -12,9 +11,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.sql.Connection;
 
-public class MessageHandler implements HttpHandler {
-    private Connection connection;
-    public MessageHandler(Connection connection) {this.connection = connection;}
+public class MessageHandler extends AbstractHandler implements HttpHandler {
+
+    public MessageHandler(Connection connection) {super(connection);}
     @Override
     public void handle(HttpExchange httpExchange) throws IOException {
         String path = httpExchange.getRequestURI().getPath();
@@ -51,7 +50,10 @@ public class MessageHandler implements HttpHandler {
                 response = jsonResponse.toString();
             }
         }
-
-        Backend.sendResponse(httpExchange, response);
+        if (response != null) {
+            sendResponseToClient(httpExchange, response, 200);
+        } else {
+            httpExchange.sendResponseHeaders(405, -1);
+        }
     }
 }
