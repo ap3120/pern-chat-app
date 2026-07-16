@@ -19,7 +19,7 @@ export const MessageContainer = ({contact, messages, setMessages}) => {
     }
   }
 
-  const PORT = process.env.REACT_APP_PORT;
+  const PORT = process.env.REACT_APP_SERVER_PORT;
   const getMessages = useCallback(async() => {
     try {
       const response = await fetch(`http://localhost:${PORT}/message/${contact.chat_id}`);

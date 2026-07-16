@@ -24,7 +24,7 @@ export const RegisterCard = () => {
   const [msg, setMsg] = useState('');
 
   const dark = useTheme();
-  const PORT = process.env.SERVER_PORT;
+  const PORT = process.env.REACT_APP_SERVER_PORT;
   const ENDPOINT = `http://localhost:${PORT}`;
 
   const handleClickShowPassword = () => setShowPassword((show) => !show);
@@ -42,7 +42,7 @@ export const RegisterCard = () => {
   const handleRegister = async() => {
     if (!validate()) {return;}
     try {
-      const response = await fetch(`${ENDPOINT}/register`, {
+      const response = await fetch(`${ENDPOINT}/users`, {
         method: 'POST',
         body: JSON.stringify({
           username: username,

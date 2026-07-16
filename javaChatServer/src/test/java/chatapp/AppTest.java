@@ -1,19 +1,18 @@
 package chatapp;
 
-import chatapp.handlers.LoginHandler;
-import chatapp.handlers.RegisterHandler;
-import chatapp.handlers.UserHandler;
-import com.sun.net.httpserver.HttpServer;
+import chatapp.handlers.*;
 import io.github.cdimascio.dotenv.Dotenv;
+import io.javalin.Javalin;
+import io.javalin.validation.ValidationException;
 import org.junit.jupiter.api.*;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.sql.Connection;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -24,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class AppTest
 {
-    private static HttpServer server;
+    private static Javalin server;
     private static final int PORT = 9230;
     private final String DOMAIN = "http://localhost:";
 
@@ -36,6 +35,7 @@ public class AppTest
         String password = System.getenv().get("DB_TEST_PASSWORD");
         String host = System.getenv().get("DB_HOST");
         String port = System.getenv().get("DB_PORT");
+
         if (dbname == null)
         { // Jenkins relies on environment variables and locally it relies on .env
             Dotenv dotenv = Dotenv.load();
@@ -46,38 +46,60 @@ public class AppTest
         Connection connection = Postgres.connectToDatabase(dbname, user, password, host != null ? host : "localhost",
                 port != null ? port : "5432");
         Postgres.cleanDatabase(connection);
-        try
+        /* Start chat server */
+        server = Javalin.create(config ->
         {
-            server = HttpServer.create(new InetSocketAddress(PORT), 0);
-            server.createContext("/register", new RegisterHandler(connection));
-            server.createContext("/users", new UserHandler(connection));
-            server.createContext("/login", new LoginHandler(connection));
-            server.start();
-        } catch (IOException pException)
-        {
-            System.out.println("Error starting server: " + pException.getMessage());
-        }
+
+            /* Handle wrong parameter format */
+            config.routes.exception(NumberFormatException.class, (e, ctx) ->
+            {
+                ctx.status(400)
+                        .json(Map.of("error", "Invalid parameter format"));
+            });
+
+            /* Handle wrong body format */
+            config.routes.exception(ValidationException.class, (e, ctx) ->
+            {
+                ctx.status(400)
+                        .json(Map.of("error", "Invalid body."));
+            });
+
+            try
+            {
+                ChatHandler.register(config, connection);
+                LoginHandler.register(config, connection);
+                LogoutHandler.register(config, connection);
+                MessageHandler.register(config, connection);
+                ProfilePictureHandler.register(config, connection);
+                UserHandler.register(config, connection);
+            } catch (IOException e)
+            {
+                System.out.println("Error registering handlers" + e.getMessage());
+            }
+        });
+        System.out.println("Server started on port " + PORT);
+        server.start(PORT);
     }
 
     @AfterAll
     public static void clean()
     {
-        server.stop(0); // delay for stopping is zero
+        server.stop();
     }
 
     @Test
     @Order(1)
     public void testRegistration()
     {
-        sendRequestAndAssertResult("Add new Alice user", RequestMethodEnum.POST, "/register", 200,
+        sendRequestAndAssertResult("Add new Alice user", RequestMethodEnum.POST, "/users", 200,
                 "{\"user_id\":1,\"username\":\"Alice\"}", "{\"username\": \"Alice\", \"password\": \"alice_pwd\"}");
-        sendRequestAndAssertResult("Add new Bob user", RequestMethodEnum.POST, "/register", 200,
+        sendRequestAndAssertResult("Add new Bob user", RequestMethodEnum.POST, "/users", 200,
                 "{\"user_id\":2,\"username\":\"Bob\"}", "{\"username\": \"Bob\", \"password\": \"bob_pwd\"}");
-        sendRequestAndAssertResult("Add new Charlie user", RequestMethodEnum.POST, "/register", 200,
+        sendRequestAndAssertResult("Add new Charlie user", RequestMethodEnum.POST, "/users", 200,
                 "{\"user_id\":3,\"username\":\"Charlie\"}",
                 "{\"username\": \"Charlie\", \"password\": \"charlie_pwd\"}");
-        sendRequestAndAssertResult("Add existing Bob user", RequestMethodEnum.POST, "/register", 200,
-                "{\"msg\":\"User Bob already exists.\"}", "{\"username\": \"Bob\", \"password\": \"bob_pwd\"}");
+        sendRequestAndAssertResult("Add existing Bob user", RequestMethodEnum.POST, "/users", 200,
+                "{\"error\":\"User Bob already exists.\"}", "{\"username\": \"Bob\", \"password\": \"bob_pwd\"}");
     }
 
     @Test
@@ -93,9 +115,9 @@ public class AppTest
     public void testLogin()
     {
         sendRequestAndAssertResult("Test login with non existing user", RequestMethodEnum.POST, "/login", 200,
-                "{\"msg\":\"User Louis doesn't exist.\"}", "{\"username\": \"Louis\",\"password\": \"louis_pwd\"}");
+                "{\"error\":\"User Louis doesn't exist.\"}", "{\"username\": \"Louis\",\"password\": \"louis_pwd\"}");
         sendRequestAndAssertResult("Test login with wrong password", RequestMethodEnum.POST, "/login", 200,
-                "{\"msg\":\"Wrong password for Alice\"}", "{\"username\": \"Alice\",\"password\": \"wrong_pwd\"}");
+                "{\"error\":\"Wrong password for Alice\"}", "{\"username\": \"Alice\",\"password\": \"wrong_pwd\"}");
         sendRequestAndAssertResult("Test login with correct password", RequestMethodEnum.POST, "/login", 200,
                 "{\"user_id\":1,\"username\":\"Alice\"}", "{\"username\": \"Alice\",\"password\": \"alice_pwd\"}");
     }
@@ -132,20 +154,22 @@ public class AppTest
         switch (pMethod)
         {
             case POST:
-                request = HttpRequest.newBuilder().uri(URI.create(DOMAIN + PORT + pEndpoint)).POST(
-                        HttpRequest.BodyPublishers.ofString(pBody)).header("Content-Type", "application/json").build();
+                request = HttpRequest.newBuilder().uri(URI.create(DOMAIN + PORT + pEndpoint))
+                        .POST(HttpRequest.BodyPublishers.ofString(pBody)).header("Content-Type", "application/json")
+                        .build();
                 break;
             case GET:
-                request = HttpRequest.newBuilder().uri(URI.create(DOMAIN + PORT + pEndpoint)).GET().header(
-                        "Content-Type", "application/json").build();
+                request = HttpRequest.newBuilder().uri(URI.create(DOMAIN + PORT + pEndpoint)).GET()
+                        .header("Content-Type", "application/json").build();
                 break;
             case DELETE:
-                request = HttpRequest.newBuilder().uri(URI.create(DOMAIN + PORT + pEndpoint)).DELETE().header(
-                        "Content-Type", "application/json").build();
+                request = HttpRequest.newBuilder().uri(URI.create(DOMAIN + PORT + pEndpoint)).DELETE()
+                        .header("Content-Type", "application/json").build();
                 break;
             case PUT:
-                request = HttpRequest.newBuilder().uri(URI.create(DOMAIN + PORT + pEndpoint)).PUT(
-                        HttpRequest.BodyPublishers.ofString(pBody)).header("Content-Type", "application/json").build();
+                request = HttpRequest.newBuilder().uri(URI.create(DOMAIN + PORT + pEndpoint))
+                        .PUT(HttpRequest.BodyPublishers.ofString(pBody)).header("Content-Type", "application/json")
+                        .build();
                 break;
             default:
         }

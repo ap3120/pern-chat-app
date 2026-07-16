@@ -23,7 +23,7 @@ export const LoginCard = () => {
   const dark = useTheme();
   const navigate = useNavigate();
 
-  const PORT = process.env.SERVER_PORT;
+  const PORT = process.env.REACT_APP_SERVER_PORT;
   const ENDPOINT = `http://localhost:${PORT}`;
 
   const handleClickShowPassword = () => setShowPassword((show) => !show);
@@ -49,7 +49,6 @@ export const LoginCard = () => {
           "Content-Type": "application/json"
         }
       });
-      console.log(response);
       if (response.ok) {
         const jsonResponse = await response.json();
         if (jsonResponse.msg) {

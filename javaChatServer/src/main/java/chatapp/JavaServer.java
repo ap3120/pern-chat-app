@@ -1,31 +1,35 @@
 package chatapp;
 
 import chatapp.handlers.*;
-import com.sun.net.httpserver.HttpServer;
 import io.github.cdimascio.dotenv.Dotenv;
+import io.javalin.Javalin;
+import io.javalin.validation.ValidationError;
+import io.javalin.validation.ValidationException;
 import io.prometheus.metrics.core.metrics.Counter;
 import io.prometheus.metrics.exporter.httpserver.HTTPServer;
 import io.prometheus.metrics.instrumentation.jvm.JvmMetrics;
-import org.glassfish.tyrus.server.Server;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.sql.Connection;
+import java.util.Collection;
+import java.util.Map;
 
 public class JavaServer
 {
     private final static int port = 9000;
     private final static int socketPort = 9200;
 
-    public static void main(String[] args)
+    public static void main(String[] args) throws IOException
     {
         Dotenv dotenv = Dotenv.load();
         String dbname = dotenv.get("DB_NAME");
         String user = dotenv.get("DB_USER");
         String password = dotenv.get("DB_PASSWORD");
+        String corsOrigin = dotenv.get("CORS_ORIGIN");
         Connection connection = Postgres.connectToDatabase(dbname, user, password, "localhost", "5432");
 
-        JvmMetrics.builder().register();
+        JvmMetrics.builder()
+                .register();
 
         Counter requestCounter = Counter.builder()
                 .name("http_requests_total")
@@ -33,57 +37,74 @@ public class JavaServer
                 .labelNames("method", "status")
                 .register();
 
-        try
-        {
-            /* Start metric endpoint */
-            HTTPServer.builder()
-                    .port(9091)
-                    .buildAndStart();
+        /* Start metric endpoint */
+        HTTPServer.builder()
+                .port(9091)
+                .buildAndStart();
 
-            /* Start chat server */
-            HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
-            System.out.println("Server started on port " + port);
-            server.createContext(
-                    "/register",
-                    new MetricsHandler(new RegisterHandler(connection), requestCounter)
-            );
-            server.createContext(
-                    "/login",
-                    new MetricsHandler(new LoginHandler(connection), requestCounter)
-            );
-            server.createContext(
-                    "/logout",
-                    new MetricsHandler(new LogoutHandler(connection), requestCounter)
-            );
-            server.createContext(
-                    "/chat",
-                    new MetricsHandler(new ChatHandler(connection), requestCounter)
-            );
-            server.createContext(
-                    "/message",
-                    new MetricsHandler(new MessageHandler(connection), requestCounter)
-            );
-            server.createContext(
-                    "/users",
-                    new MetricsHandler(new UserHandler(connection), requestCounter)
-            );
-            server.setExecutor(null);
-            server.start();
-        } catch (IOException e)
+        /* Start chat server */
+        var server = Javalin.create(config ->
         {
-            throw new RuntimeException(e);
-        }
+            config.bundledPlugins.enableCors(cors -> cors.addRule(rule ->
+            {
+                rule.allowHost(corsOrigin);
+                rule.allowCredentials = true;
+            }));
+
+            /* Handle wrong parameter format */
+            config.routes.exception(NumberFormatException.class, (e, ctx) ->
+            {
+                String message = "Invalid parameter format: " + e.getMessage();
+                ctx.status(400)
+                        .json(Map.of("error", message));
+                System.out.println(message);
+            });
+
+            /* Handle wrong body format */
+            config.routes.exception(ValidationException.class, (e, ctx) ->
+            {
+                String message = "Invalid body: " + e.getErrors().values().stream().flatMap(Collection::stream).map(
+                        ValidationError::getMessage).findFirst().orElse("");
+                ctx.status(400)
+                        .json(Map.of("error", message));
+                System.out.println(message);
+            });
+
+            try
+            {
+                ChatHandler.register(config, connection);
+                LoginHandler.register(config, connection);
+                LogoutHandler.register(config, connection);
+                MessageHandler.register(config, connection);
+                ProfilePictureHandler.register(config, connection);
+                UserHandler.register(config, connection);
+            } catch (IOException e)
+            {
+                System.out.println("Error registering handlers" + e.getMessage());
+            }
+
+            if (requestCounter != null)
+            {
+                config.routes.after(ctx ->
+                        requestCounter.labelValues(ctx.method()
+                                        .name(), String.valueOf(ctx.statusCode()))
+                                .inc());
+            }
+        });
+        System.out.println("Server started on port " + port);
+        server.start(port);
 
         /* Start websocket */
-        Server server = new Server("localhost", socketPort, "/", null, WebSocketServer.class);
-        try
+        Javalin socketServer = Javalin.create(config ->
         {
-            server.start();
-            System.out.println("WebSocket server started on ws://localhost:" + socketPort + "/ws");
-            Thread.currentThread().join();
-        } catch (Exception e)
-        {
-            System.out.println("Error starting websocket: " + e.getMessage());
-        }
+            config.routes.ws("/ws", wsConfig ->
+            {
+                wsConfig.onConnect(WebSocketServer::onOpen);
+                wsConfig.onMessage(WebSocketServer::onMessage);
+                wsConfig.onClose(WebSocketServer::onClose);
+            });
+        });
+        socketServer.start("localhost", socketPort);
+        System.out.println("WebSocket server started on ws://localhost:" + socketPort + "/ws");
     }
 }

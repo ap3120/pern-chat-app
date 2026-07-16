@@ -1,4 +1,4 @@
-import {useCallback, useState, useMemo} from 'react';
+import {useCallback, useMemo, useState} from 'react';
 import {Contacts} from './Contacts.js';
 import {Chat} from './Chat.js';
 import {Navigate, useNavigate} from 'react-router-dom';
@@ -8,7 +8,7 @@ export const Dashboard = () => {
   const [contact, setContact] = useState({});
   const [messages, setMessages] = useState([]);
   
-  const WEBSOCKET_PORT = process.env.WEBSOCKET_PORT;
+  const WEBSOCKET_PORT = process.env.REACT_APP_WEBSOCKET_PORT;
   
   const navigate = useNavigate();
 
@@ -37,6 +37,11 @@ export const Dashboard = () => {
     const message = {new_client_id: sessionStorage.getItem("user_id")}
     socket.send(JSON.stringify(message));
 
+    socket.heartbeat = setInterval(() => {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({"type": "ping"}));
+      }
+    }, 10_000);
   }
 
   socket.onmessage = event => {
@@ -47,6 +52,7 @@ export const Dashboard = () => {
   }
 
   socket.onclose = () => {
+    clearInterval(socket.heartbeat);
     sessionStorage.setItem('user_id', '');
     sessionStorage.setItem('username', '');
     navigate("/");

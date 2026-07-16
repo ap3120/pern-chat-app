@@ -11,7 +11,7 @@ export const Contacts = ({setContact, closeSocket}) => {
   const [chats, setChats] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  const PORT = process.env.REACT_APP_PORT;
+  const PORT = process.env.REACT_APP_SERVER_PORT;
 
   const getStyle = i => {
     return [
@@ -30,32 +30,19 @@ export const Contacts = ({setContact, closeSocket}) => {
     ]
   }
 
-  const getChatContact = async(chat_id) => {
-    try {
-      const response = await fetch(`http://localhost:${PORT}/chat/users_chats/${chat_id}/${sessionStorage.getItem("user_id")}`)
-      const jsonResponse = await response.json();
-      setChats(prevChats => prevChats.map(elem => (elem.chat_id === chat_id ? {...elem, chat_contact: jsonResponse.username, chat_contact_id: jsonResponse.user_id} : elem)))
-    } catch(error) {
-      console.log(error);
-    }
-  }
   const getChats = useCallback(async() => {
     try {
       const response = await fetch(`http://localhost:${PORT}/chat/${sessionStorage.getItem('user_id')}`);
       const jsonResponse = await response.json();
       setChats(jsonResponse);
-      for (let i=0; i<jsonResponse.length; i++) {
-        getChatContact(jsonResponse[i].chat_id);
-      }
     } catch (error) {
       console.log(error);
     }
-  }, [getChatContact, PORT]);
-
+  }, [PORT]);
 
   const handleClick = (chat, index) => {
     setSelectedIndex(index);
-    setContact({username: chat.chat_contact, user_id: chat.chat_contact_id, chat_id: chat.chat_id})
+    setContact({username: chat.username, user_id: chat.user_id, chat_id: chat.chat_id})
   }
 
   useEffect(() => {
@@ -74,7 +61,7 @@ export const Contacts = ({setContact, closeSocket}) => {
       {chats.map((chat, index) => (
         <ListItem sx={getStyle(index)} key={index} onClick={() => handleClick(chat, index)}>
           <AccountCircleIcon sx={{fontSize:'50px', marginRight:'20px'}}/>
-          <ListItemText>{chat.chat_contact}</ListItemText>
+          <ListItemText>{chat.username}</ListItemText>
         </ListItem>
       ))}
       </List>

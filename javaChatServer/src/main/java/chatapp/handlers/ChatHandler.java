@@ -1,91 +1,49 @@
 package chatapp.handlers;
 
 import chatapp.Postgres;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import chatapp.models.AddUserToChatRequestBody;
+import chatapp.models.CreateChatRequestBody;
+import chatapp.utils.Utils;
+import io.javalin.config.JavalinConfig;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.sql.Connection;
+import java.util.List;
+import java.util.Map;
 
-import static java.lang.Integer.parseInt;
-
-public class ChatHandler extends AbstractHandler implements HttpHandler
+public class ChatHandler
 {
-    public ChatHandler(Connection connection)
+    public static void register(JavalinConfig config, Connection connection) throws IOException
     {
-        super(connection);
-    }
+        /* Add a new chat */
+        config.routes.post("/chat", ctx ->
+        {
+            CreateChatRequestBody body = ctx.bodyValidator(CreateChatRequestBody.class)
+                    .check(b -> Utils.isInt(b.created_by),
+                            "created_by must be an integer")
+                    .get();
+            Map<String, Object> response = Postgres.createChat(connection, Integer.parseInt(body.created_by));
+            ctx.json(response);
+        });
 
-    @Override
-    public void handle(HttpExchange httpExchange) throws IOException
-    {
-        String path = httpExchange.getRequestURI().getPath();
-        String[] arrayPath = path.split("/");
-        String response = null;
-        if (httpExchange.getRequestMethod().equalsIgnoreCase("OPTIONS"))
+        /* Add a participant to a chat */
+        config.routes.post("/chat/users_chats", ctx ->
         {
-            OptionRequestHandler.handle(httpExchange);
-        } else if (arrayPath.length == 2 && httpExchange.getRequestMethod().equalsIgnoreCase("POST"))
+            AddUserToChatRequestBody body = ctx.bodyValidator(AddUserToChatRequestBody.class)
+                    .check(b -> Utils.isInt(b.user_id), "user_id must be an integer")
+                    .check(b -> Utils.isInt(b.chat_id), "chat_id must be an integer")
+                    .get();
+            Map<String, Object> response = Postgres.addParticipantToChat(connection, Integer.parseInt(body.user_id),
+                    Integer.parseInt(body.chat_id));
+            ctx.json(response);
+        });
+
+        /* Returns all the chats of a user*/
+        config.routes.get("/chat/{user_id}", ctx ->
         {
-            InputStreamReader requestBodyReader = new InputStreamReader(httpExchange.getRequestBody(), "utf-8");
-            BufferedReader bufferedReader = new BufferedReader(requestBodyReader);
-            StringBuilder requestBody = new StringBuilder();
-            String line;
-            while ((line = bufferedReader.readLine()) != null)
-            {
-                requestBody.append(line);
-            }
-            bufferedReader.close();
-            requestBodyReader.close();
-            String body = requestBody.toString();
-            JSONObject jsonBody = new JSONObject(body);
-            JSONObject jsonResponse = Postgres.addToChat(connection,
-                    Integer.parseInt((String) jsonBody.get("created_by")));
-            response = jsonResponse != null ? jsonResponse.toString() : null;
-        } else if ((arrayPath.length == 3))
-        {
-            if (httpExchange.getRequestMethod().equalsIgnoreCase("POST"))
-            {
-                InputStreamReader requestBodyReader = new InputStreamReader(httpExchange.getRequestBody(), "utf-8");
-                BufferedReader bufferedReader = new BufferedReader(requestBodyReader);
-                StringBuilder requestBody = new StringBuilder();
-                String line;
-                while ((line = bufferedReader.readLine()) != null)
-                {
-                    requestBody.append(line);
-                }
-                bufferedReader.close();
-                requestBodyReader.close();
-                String body = requestBody.toString();
-                JSONObject jsonBody = new JSONObject(body);
-                JSONObject jsonResponse = Postgres.addToUsersChats(connection, (int) jsonBody.get("user_id"),
-                        (int) jsonBody.get("chat_id"));
-                response = jsonResponse != null ? jsonResponse.toString() : null;
-            } else if (httpExchange.getRequestMethod().equalsIgnoreCase("GET"))
-            {
-                JSONArray jsonResponse = Postgres.readFromChats(connection, parseInt(arrayPath[2]));
-                response = jsonResponse != null ? jsonResponse.toString() : null;
-            }
-        } else if (arrayPath.length == 5 && httpExchange.getRequestMethod().equalsIgnoreCase("GET"))
-        {
-            JSONObject jsonResponse = Postgres.getUser(connection, parseInt(arrayPath[3]), parseInt(arrayPath[4]));
-            response = jsonResponse != null ? jsonResponse.toString() : null;
-        }
-        if (response != null)
-        {
-            httpExchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            httpExchange.sendResponseHeaders(200, response.length());
-            OutputStream outputStream = httpExchange.getResponseBody();
-            outputStream.write(response.getBytes());
-            outputStream.close();
-        } else
-        {
-            httpExchange.sendResponseHeaders(405, -1);
-        }
+            int user_id = Integer.parseInt(ctx.pathParam("user_id"));
+            List<Map<String, Object>> response = Postgres.getChatsFromUser(connection, user_id);
+            ctx.json(response);
+        });
     }
 }

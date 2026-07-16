@@ -13,7 +13,7 @@ export const Navbar = ({setFilteringUsers, setUsers, closeSocket}) => {
 
   const navigate = useNavigate();
 
-  const PORT = process.env.REACT_APP_PORT;
+  const PORT = process.env.REACT_APP_SERVER_PORT;
 
   const handleClick = async() => {
     setFilteringUsers(true);

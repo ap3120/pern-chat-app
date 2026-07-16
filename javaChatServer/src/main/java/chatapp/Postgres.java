@@ -1,15 +1,13 @@
 package chatapp;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.sql.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 import java.util.stream.IntStream;
 
 public class Postgres
@@ -28,7 +26,8 @@ public class Postgres
         try
         {
             Class.forName("org.postgresql.Driver");
-            connection = DriverManager.getConnection("jdbc:postgresql://" + host + ":" + port + "/" + dbname, user, password);
+            connection = DriverManager.getConnection("jdbc:postgresql://" + host + ":" + port + "/" + dbname, user,
+                    password);
         } catch (Exception e)
         {
             System.out.println("Error creating database connection: " + e.getMessage());
@@ -43,7 +42,7 @@ public class Postgres
      * @param created_by the chat creator
      * @return added chat to json
      */
-    public static JSONObject addToChat(Connection conn, int created_by)
+    public static Map<String, Object> createChat(Connection conn, int created_by)
     {
         Statement statement;
         try
@@ -53,33 +52,23 @@ public class Postgres
                     created_by, created_at);
             statement = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
             ResultSet rs = statement.executeQuery(query);
-            rs.next();
-            String chat_id = rs.getString("chat_id");
-            String second_query = String.format("insert into users_chats (user_id, chat_id) values ('%s', '%s');",
-                    created_by, chat_id);
-            Statement second_statement = conn.createStatement();
-            second_statement.executeUpdate(second_query);
-
-            rs.beforeFirst();
-
-            JSONArray result = convertResultSetToJson(rs);
-            return (JSONObject) result.get(0);
+            List<Map<String, Object>> result = parseResultSetToMapList(rs);
+            return result.get(0);
         } catch (Exception e)
         {
-            e.printStackTrace();
-            return null;
+            return Map.of("error", "Error inserting chat: " + e.getMessage());
         }
     }
 
     /**
-     * Add to users_chats table
+     * Add a participant to a chat
      *
      * @param conn
-     * @param user_id
-     * @param chat_id
+     * @param user_id the participant
+     * @param chat_id the chat
      * @return added row
      */
-    public static JSONObject addToUsersChats(Connection conn, int user_id, int chat_id)
+    public static Map<String, Object> addParticipantToChat(Connection conn, int user_id, int chat_id)
     {
         Statement statement;
         try
@@ -88,12 +77,11 @@ public class Postgres
                     user_id, chat_id);
             statement = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
             ResultSet rs = statement.executeQuery(query);
-            JSONArray result = convertResultSetToJson(rs);
-            return (JSONObject) result.get(0);
+            List<Map<String, Object>> result = parseResultSetToMapList(rs);
+            return result.get(0);
         } catch (Exception e)
         {
-            e.printStackTrace();
-            return null;
+            return Map.of("error", "Error add chat participant: " + e.getMessage());
         }
     }
 
@@ -104,47 +92,30 @@ public class Postgres
      * @param userId
      * @return elements from chats table
      */
-    public static JSONArray readFromChats(Connection conn, int userId)
+    public static List<Map<String, Object>> getChatsFromUser(Connection conn, int userId)
     {
         Statement statement;
         try
         {
             String query = String.format(
-                    "select * from chats join users_chats on chats.chat_id = users_chats.chat_id where users_chats.user_id = '%s';",
-                    userId);
+                    "select " +
+                            "uc1.chat_id, " +
+                            "u.user_id, " +
+                            "u.username, " +
+                            "c.created_at, " +
+                            "c.created_by " +
+                            "from users_chats as uc1 " +
+                            "join users_chats as uc2 on uc1.chat_id = uc2.chat_id " +
+                            "join users as u on u.user_id = uc2.user_id " +
+                            "join chats as c on c.chat_id = uc1.chat_id " +
+                            "where uc1.user_id = '%s' and uc2.user_id <> '%s';",
+                    userId, userId);
             statement = conn.createStatement();
             ResultSet rs = statement.executeQuery(query);
-            return convertResultSetToJson(rs);
+            return parseResultSetToMapList(rs);
         } catch (Exception e)
         {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    /**
-     * Returns the other participant in the specified chat for the given user
-     *
-     * @param conn
-     * @param chat_id
-     * @param user_id
-     * @return user
-     */
-    public static JSONObject getUser(Connection conn, int chat_id, int user_id)
-    {
-        Statement statement;
-        try
-        {
-            String query = String.format(
-                    "select users.user_id, users.username from users join users_chats on users.user_id = users_chats.user_id where users_chats.chat_id = '%s' and users_chats.user_id != '%s';",
-                    chat_id, user_id);
-            statement = conn.createStatement();
-            ResultSet rs = statement.executeQuery(query);
-            JSONArray result = convertResultSetToJson(rs);
-            return (JSONObject) result.get(0);
-        } catch (Exception e)
-        {
-            return null;
+            return List.of(Map.of("error", "Could not read chats from database: " + e.getMessage()));
         }
     }
 
@@ -154,18 +125,17 @@ public class Postgres
      * @param conn the connection object
      * @return all users
      */
-    public static JSONArray getUsers(Connection conn)
+    public static List<Map<String, Object>> getUsers(Connection conn)
     {
         Statement statement;
         try
         {
             statement = conn.createStatement();
             ResultSet rs = statement.executeQuery("Select user_id, username from users order by user_id asc;");
-            return convertResultSetToJson(rs);
+            return parseResultSetToMapList(rs);
         } catch (Exception e)
         {
-            e.printStackTrace();
-            return null;
+            return List.of(Map.of("error", "Could not get users: " + e.getMessage()));
         }
     }
 
@@ -178,7 +148,8 @@ public class Postgres
      * @param newPassword
      * @return info message
      */
-    public static JSONObject updateUser(Connection conn, int user_id, String prevPasswordToCheck, String newPassword)
+    public static Map<String, Object> updateUser(Connection conn, int user_id, String prevPasswordToCheck,
+                                                 String newPassword)
     {
         Statement statement;
         try
@@ -188,11 +159,11 @@ public class Postgres
             ResultSet rs = statement.executeQuery(query);
             if (!rs.first())
             {
-                return infoMessage("User of user_id " + user_id + " doesn't exist.");
+                return Map.of("error", "User of user_id " + user_id + " doesn't exist.");
             }
             rs.beforeFirst();
-            JSONArray res = convertResultSetToJson(rs);
-            JSONObject result = (JSONObject) res.get(0);
+            List<Map<String, Object>> res = parseResultSetToMapList(rs);
+            Map<String, Object> result = res.get(0);
             if (result.get("password").equals(hash(prevPasswordToCheck)))
             {
                 String hashedNewPassword = hash(newPassword);
@@ -200,16 +171,15 @@ public class Postgres
                         hashedNewPassword, user_id);
                 Statement newStatement = conn.createStatement();
                 ResultSet newRs = newStatement.executeQuery(newQuery);
-                if (newRs != null) return infoMessage("Password successfully updated");
-                return infoMessage("Something went wrong, password couldn't be updated.");
+                if (newRs != null) return Map.of("msg", "Password successfully updated");
+                return Map.of("error", "Something went wrong, password couldn't be updated.");
             } else
             {
-                return infoMessage("Incorrect password.");
+                return Map.of("error", "Incorrect password.");
             }
         } catch (Exception e)
         {
-            e.printStackTrace();
-            return null;
+            return Map.of("error", "Error changing password: " + e.getMessage());
         }
     }
 
@@ -220,7 +190,7 @@ public class Postgres
      * @param user_id
      * @return info message
      */
-    public static JSONObject deleteUser(Connection conn, int user_id)
+    public static Map<String, Object> deleteUser(Connection conn, int user_id)
     {
         Statement statement;
         try
@@ -228,11 +198,10 @@ public class Postgres
             String query = String.format("delete from users where user_id = '%s'", user_id);
             statement = conn.createStatement();
             statement.executeUpdate(query);
-            return infoMessage("User successfully deleted.");
+            return Map.of("msg", "User successfully deleted.");
         } catch (Exception e)
         {
-            System.out.println("Error deleting user: " + e.getMessage());
-            return null;
+            return Map.of("error", "Error deleting user: " + e.getMessage());
         }
     }
 
@@ -248,8 +217,8 @@ public class Postgres
      * @param chat_id
      * @return the added message
      */
-    public static JSONObject addMessage(Connection conn, String content, int sender_id, String sender_username,
-                                        int receiver_id, String receiver_username, int chat_id)
+    public static Map<String, Object> addMessage(Connection conn, String content, int sender_id, String sender_username,
+                                                 int receiver_id, String receiver_username, int chat_id)
     {
         Statement statement;
         LocalDateTime send_at = LocalDateTime.now();
@@ -261,11 +230,11 @@ public class Postgres
             );
             statement = conn.createStatement();
             ResultSet rs = statement.executeQuery(query);
-            JSONArray result = convertResultSetToJson(rs);
-            return (JSONObject) result.get(0);
+            List<Map<String, Object>> result = parseResultSetToMapList(rs);
+            return result.get(0);
         } catch (Exception e)
         {
-            return null;
+            return Map.of("error", "Error inserting message: " + e.getMessage());
         }
     }
 
@@ -276,7 +245,7 @@ public class Postgres
      * @param chat_id
      * @return all messages from a chat
      */
-    public static JSONArray getMessagesFromChat(Connection conn, int chat_id)
+    public static List<Map<String, Object>> getMessagesFromChat(Connection conn, int chat_id)
     {
         Statement statement;
         try
@@ -284,10 +253,10 @@ public class Postgres
             String query = String.format("select * from messages where chat_id = '%s' order by send_at", chat_id);
             statement = conn.createStatement();
             ResultSet rs = statement.executeQuery(query);
-            return convertResultSetToJson(rs);
+            return parseResultSetToMapList(rs);
         } catch (Exception e)
         {
-            return null;
+            return List.of(Map.of("error", e.getMessage()));
         }
     }
 
@@ -326,71 +295,71 @@ public class Postgres
      * @param password
      * @return the added user
      */
-    public static JSONObject addUser(Connection conn, String username, String password)
+    public static Map<String, Object> addUser(Connection conn, String username, String password)
     {
         Statement statement;
         try
         {
-            if (userExists(conn, username)) return infoMessage("User " + username + " already exists.");
+            if (userExists(conn, username)) return Map.of("error", "User " + username + " already exists.");
             String hashedPassword = hash(password);
             String query = String.format("insert into users (username, password) values ('%s', '%s') returning *;",
                     username, hashedPassword);
             statement = conn.createStatement();
             ResultSet rs = statement.executeQuery(query);
-            JSONObject result = convertResultSetToJson(rs).getJSONObject(0);
+            Map<String, Object> result = parseResultSetToMapList(rs).get(0);
             result.remove("password");
             return result;
         } catch (Exception e)
         {
-            return infoMessage("Something went wrong with the server.");
+            return Map.of("error", "Something went wrong with the server.");
         }
     }
 
-    public static JSONObject login(Connection conn, String username, String password)
+    public static Map<String, Object> login(Connection conn, String username, String password)
     {
         Statement statement;
         try
         {
-            if (!userExists(conn, username)) return infoMessage("User " + username + " doesn't exist.");
+            if (!userExists(conn, username))
+            {
+                return Map.of("error", "User " + username + " doesn't exist.");
+            }
             String query = String.format("select * from users where username = '%s';", username);
             statement = conn.createStatement();
             ResultSet rs = statement.executeQuery(query);
-            JSONObject result = convertResultSetToJson(rs).getJSONObject(0);
-            String dbPassword = result.getString("password");
+            Map<String, Object> result = parseResultSetToMapList(rs).get(0);
+            String dbPassword = result.get("password").toString();
             if (dbPassword.equals(hash(password)))
             {
                 result.remove("password");
                 return result;
             }
-            return infoMessage("Wrong password for " + username);
+            return Map.of("error", "Wrong password for " + username);
         } catch (Exception e)
         {
-            return infoMessage("Something went wrong with the server.");
+            return Map.of("error", "Something went wrong with the server.");
         }
     }
 
     /**
      * Cleans tables of database and restart auto increment
+     *
      * @param conn the connection object
      */
-    public static void cleanDatabase(Connection conn) {
+    public static void cleanDatabase(Connection conn)
+    {
         Statement statement;
-        try {
+        try
+        {
             statement = conn.createStatement();
             statement.executeUpdate("TRUNCATE TABLE users CASCADE;");
             statement.executeUpdate("ALTER SEQUENCE users_user_id_seq RESTART WITH 1;");
             statement.executeUpdate("ALTER SEQUENCE messages_message_id_seq RESTART WITH 1;");
             statement.executeUpdate("ALTER SEQUENCE chats_chat_id_seq RESTART WITH 1;");
-        } catch (Exception pException) {
+        } catch (Exception pException)
+        {
             System.out.println("Error cleaning tables: " + pException.getMessage());
         }
-    }
-
-    private static JSONObject infoMessage(String msg)
-    {
-        JSONObject error = new JSONObject();
-        error.put("msg", msg);
-        return error;
     }
 
     private static String hash(String password)
@@ -415,9 +384,9 @@ public class Postgres
      * Convert a result set to a json array
      *
      * @param rs the result set
-     * @return json array of result set
+     * @return list of result set
      */
-    private static JSONArray convertResultSetToJson(ResultSet rs)
+    private static List<Map<String, Object>> parseResultSetToMapList(ResultSet rs)
     {
         try
         {
@@ -431,33 +400,33 @@ public class Postgres
                             return md.getColumnName(i + 1);
                         } catch (SQLException e)
                         {
-                            e.printStackTrace();
+                            System.out.println("Error getting column names: " + e.getMessage());
                             return "?";
                         }
                     })
-                    .collect(Collectors.toList());
+                    .toList();
 
-            JSONArray result = new JSONArray();
+            List<Map<String, Object>> result = new ArrayList<>();
             while (rs.next())
             {
-                JSONObject row = new JSONObject();
+                Map<String, Object> row = new HashMap<>();
                 colNames.forEach(cn ->
                 {
                     try
                     {
                         row.put(cn, rs.getObject(cn));
-                    } catch (JSONException | SQLException e)
+                    } catch (SQLException e)
                     {
-                        e.printStackTrace();
+                        System.out.println("Error getting row: " + e.getMessage());
                     }
                 });
-                result.put(row);
+                result.add(row);
             }
             return result;
         } catch (SQLException e)
         {
-            e.printStackTrace();
-            return null;
+            System.out.println("Error parsing resultSet: " + e.getMessage());
+            return List.of(Map.of("error", "Error parsing resultSet."));
         }
     }
 }

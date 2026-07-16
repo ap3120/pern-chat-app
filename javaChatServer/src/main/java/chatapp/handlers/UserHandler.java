@@ -1,67 +1,58 @@
 package chatapp.handlers;
 
 import chatapp.Postgres;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import chatapp.models.AddUserRequestBody;
+import chatapp.models.UpdateUserRequestBody;
+import io.javalin.config.JavalinConfig;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.sql.Connection;
+import java.util.List;
+import java.util.Map;
 
-public class UserHandler extends AbstractHandler implements HttpHandler
+public class UserHandler
 {
 
-    public UserHandler(Connection connection)
+    public static void register(JavalinConfig config, Connection connection)
     {
-        super(connection);
-    }
+        /* Returns all users */
+        config.routes.get("/users", ctx ->
+        {
+            List<Map<String, Object>> response = Postgres.getUsers(connection);
+            ctx.json(response);
+        });
 
-    @Override
-    public void handle(HttpExchange httpExchange) throws IOException
-    {
-        String path = httpExchange.getRequestURI().getPath();
-        String[] pathArray = path.split("/");
-        String response = null;
+        /* Adds a user*/
+        config.routes.post("/users", ctx ->
+        {
+            AddUserRequestBody body = ctx.bodyValidator(AddUserRequestBody.class)
+                    .check(b -> b.username != null, "username is required")
+                    .check(b -> b.password != null, "password is required.")
+                    .get();
+            Map<String, Object> response = Postgres.addUser(connection, body.username, body.password);
+            ctx.json(response);
+        });
 
-        if (httpExchange.getRequestMethod().equalsIgnoreCase("OPTIONS"))
+        config.routes.put("/users/{user_id}", ctx ->
         {
-            OptionRequestHandler.handle(httpExchange);
-        } else if (httpExchange.getRequestMethod().equalsIgnoreCase("GET"))
-        {
-            JSONArray jsonResponse = Postgres.getUsers(connection);
-            response = jsonResponse.toString();
-        } else if (httpExchange.getRequestMethod().equalsIgnoreCase("PUT"))
-        {
-            InputStreamReader requestBodyReader = new InputStreamReader(httpExchange.getRequestBody(), "utf-8");
-            BufferedReader bufferedReader = new BufferedReader(requestBodyReader);
-            StringBuilder requestBody = new StringBuilder();
-            String line;
-            while ((line = bufferedReader.readLine()) != null)
-            {
-                requestBody.append(line);
-            }
-            bufferedReader.close();
-            requestBodyReader.close();
-            String body = requestBody.toString();
-            JSONObject jsonBody = new JSONObject(body);
-            JSONObject jsonResponse = Postgres.updateUser(connection, Integer.parseInt(pathArray[2]),
-                    (String) jsonBody.get("currentPassword"), (String) jsonBody.get("password"));
-            response = jsonResponse.toString();
-        } else if (httpExchange.getRequestMethod().equalsIgnoreCase("DELETE"))
-        {
-            JSONObject jsonResponse = Postgres.deleteUser(connection, Integer.parseInt(pathArray[2]));
-            response = jsonResponse.toString();
-        }
+            int user_id = Integer.parseInt(ctx.pathParam("user_id"));
+            UpdateUserRequestBody body = ctx.bodyValidator(UpdateUserRequestBody.class)
+                    .check(b -> b.currentPassword != null, "currentPassword is required.")
+                    .check(b -> b.password != null, "password is required.")
+                    .get();
+            Map<String, Object> response = Postgres.updateUser(
+                    connection,
+                    user_id,
+                    body.currentPassword,
+                    body.password
+            );
+            ctx.json(response);
+        });
 
-        if (response != null)
+        config.routes.delete("/users/{user_id}", ctx ->
         {
-            sendResponseToClient(httpExchange, response, 200);
-        } else
-        {
-            httpExchange.sendResponseHeaders(405, -1);
-        }
+            int user_id = Integer.parseInt(ctx.pathParam("user_id"));
+            Map<String, Object> response = Postgres.deleteUser(connection, user_id);
+            ctx.json(response);
+        });
     }
 }

@@ -21,7 +21,7 @@ outline: 0;
 export const TextArea = ({inputRef, contact, sendMessageToSocket}) => {
 
   const [message, setMessage] = useState('');
-  const PORT = process.env.REACT_APP_PORT;
+  const PORT = process.env.REACT_APP_SERVER_PORT;
 
   const handleClick = async() => {
     const msg = message.replace(/[\n]/g, '<br />');

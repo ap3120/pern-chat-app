@@ -9,10 +9,10 @@ info:
   version: 1.0.0
 
 paths:
-  /register:
+  /users:
     post:
       tags:
-        - register
+        - users
       summary: Register a new user
       description: Register a new user
       operationId: registerUser
@@ -45,8 +45,6 @@ paths:
                   username:
                     type: string
                     example: 'Louis'
-    
-  /users:
     get:
       tags:
         - users
@@ -261,6 +259,10 @@ paths:
                       type: integer
                       format: int32
                       example: 22
+                    username:
+                      description: The user name
+                      type: string
+                      example: "Alice"
                     created_at:
                       description: The timestamp of the chat creation
                       type: object
@@ -297,45 +299,6 @@ paths:
                     type: integer
                     format: int32
                     example: 31
-  /chat/users_chats/{chat_id}/{user_id}:
-    get:
-      tags:
-        - chat
-      summary: Return the other chat participant
-      description: Return the other chat participant
-      parameters:
-        - name: chat_id
-          in: path
-          description: The id of the chat
-          required: true
-          schema:
-            type: integer
-            format: int32
-            example: 31
-        - name: user_id
-          in: path
-          description: The id of the user
-          required: true
-          schema:
-            type: integer
-            format: int32
-            example: 2
-      operationId: getOtherChatParticipant
-      responses:
-        '200':
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  user_id:
-                    type: integer
-                    format: int32
-                    example: 27
-                  username:
-                    type: string
-                    example: "Louis"
   /message:
     post:
       tags:

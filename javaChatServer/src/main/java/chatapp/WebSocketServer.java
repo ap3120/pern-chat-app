@@ -2,55 +2,71 @@ package chatapp;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.websocket.OnClose;
-import jakarta.websocket.OnMessage;
-import jakarta.websocket.OnOpen;
-import jakarta.websocket.Session;
-import jakarta.websocket.server.ServerEndpoint;
+import io.javalin.websocket.WsCloseContext;
+import io.javalin.websocket.WsConnectContext;
+import io.javalin.websocket.WsContext;
+import io.javalin.websocket.WsMessageContext;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-@ServerEndpoint("/ws")
-public class WebSocketServer {
-    private static final CopyOnWriteArraySet<Session> sessions = new CopyOnWriteArraySet<>();
-    private static HashMap<String, String> clients = new HashMap<>();
+public class WebSocketServer
+{
+    private static final Map<String, WsContext> clients = new ConcurrentHashMap<>();
+    private static final ObjectMapper mapper = new ObjectMapper();
 
-    @OnOpen
-    public void onOpen(Session session) {
-        sessions.add(session);
-        System.out.println("New connection established: " + session.getId());
+    public static void onOpen(WsConnectContext ctx)
+    {
+        System.out.println("New connection established: " + ctx.sessionId());
     }
 
-    @OnMessage
-    public void onMessage(String message, Session session) throws IOException {
-        System.out.println("Received message: " + message);
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode jsonMessage = mapper.readTree(message);
-        if (jsonMessage.get("new_client_id") != null) {
-            clients.put(jsonMessage.get("new_client_id").asText(), session.getId());
-        } else if (jsonMessage.get("content") != null && jsonMessage.get("receiver_id") != null) {
-            String receiverId = jsonMessage.get("receiver_id").asText();
-            for (Session s : sessions) {
-                if (clients.get(receiverId) != null && clients.get(receiverId).equals(s.getId())) {
-                    s.getBasicRemote().sendText(message);
-                }
+    public static void onMessage(WsMessageContext ctx)
+    {
+
+        String raw = ctx.message();
+        JsonNode message;
+        try
+        {
+            message = mapper.readTree(raw);
+        } catch (Exception e)
+        {
+            System.out.println("Ignoring malformed websocket frame: " + e.getMessage());
+            return;
+        }
+
+        if (message.hasNonNull("new_client_id"))
+        {
+            clients.put(message.get("new_client_id").asText(), ctx);
+        } else if (message.has("type") && message.get("type").asText().equals("ping"))
+        {
+            ctx.send("{\"type\":\"pong\"}");
+        } else if (message.hasNonNull("content") && message.hasNonNull("receiver_id"))
+        {
+            String receiverId = message.get("receiver_id").asText();
+            WsContext receiver = clients.get(receiverId);
+            if (receiver != null)
+            {
+                sendQuietly(receiver, raw);
             }
-            session.getBasicRemote().sendText(message);
+            sendQuietly(ctx, raw);
         }
     }
 
-    @OnClose
-    public void onClose(Session session) {
-        sessions.remove(session);
-        for (String key : clients.keySet()) {
-            System.out.println(key);
-            if (clients.get(key).equals(session.getId())) {
-                System.out.println("Removing this user: " + key);
-                clients.remove(key);
-            }
+    public static void onClose(WsCloseContext ctx)
+    {
+        clients.values().removeIf(c -> c.sessionId().equals(ctx.sessionId()));
+        System.out.println("Connection closed: " + ctx.sessionId());
+    }
+
+    private static void sendQuietly(WsContext ctx, String message)
+    {
+        try
+        {
+            ctx.send(message);
+        } catch (Exception e)
+        {
+            // Receiver may have disconnected between lookup and send; drop the stale entry.
+            clients.values().removeIf(c -> c.sessionId().equals(ctx.sessionId()));
         }
-        System.out.println("Connection closed: " + session.getId());
     }
 }

@@ -1,11 +1,11 @@
 # Java chat server
 
-This project is a java server for a chat application.
+This project is a java server built on javalin for a chat application.
 
 ## Prerequisites
 You need to have the following installed:
 1. Postgres
-2. Java runtime environment
+2. Java 17
 3. Maven
 4. Jenkins
 5. Docker
