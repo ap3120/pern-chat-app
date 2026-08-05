@@ -39,9 +39,9 @@ public class ChatHandler
         });
 
         /* Returns all the chats of a user*/
-        config.routes.get("/chat/{user_id}", ctx ->
+        config.routes.get("/chat", ctx ->
         {
-            int user_id = Integer.parseInt(ctx.pathParam("user_id"));
+            int user_id = Utils.requireLogin(ctx);
             List<Map<String, Object>> response = Postgres.getChatsFromUser(connection, user_id);
             ctx.json(response);
         });

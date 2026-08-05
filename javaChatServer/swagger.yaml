@@ -68,22 +68,12 @@ paths:
                     username:
                       type: string
                       example: "Alice"
-  /users/{user_id}:
     put:
       tags:
         - users
       summary: Update a user
       description: Change a user password.
       operationId: updateUserById
-      parameters:
-        - name: user_id
-          in: path
-          description: The id of the user to update
-          required: true
-          schema:
-            type: integer
-            format: int32
-            example: 2
       requestBody:
         description: Update a user
         content:
@@ -127,15 +117,6 @@ paths:
       summary: Delete a user
       description: Delete a user by id
       operationId: deleteUserById
-      parameters:
-        - name: user_id
-          in: path
-          description: The id of the user to delete
-          required: true
-          schema:
-            type: integer
-            format: int32
-            example: 2
       responses:
         '200':
           description: successful operation
@@ -203,6 +184,24 @@ paths:
                   msg:
                     type: string
                     example: "Wrong password for Louis"
+  /logout:
+    post:
+      tags:
+        - logout
+      summary: Logout a user
+      description: Logout a user
+      operationId: logoutUser
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: 'User logged out.'
   /chat:
     post:
       tags:
@@ -228,21 +227,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/chats'
-  /chat/{user_id}:
     get:
       tags:
         - chat
       summary: Returns all the chats of a user
       description: Returns all the chats where the user participates
-      parameters:
-        - name: user_id
-          in: path
-          description: The id of the user
-          required: true
-          schema:
-            type: integer
-            format: int32
-            example: 2
       operationId: getUserChats
       responses:
         '200':

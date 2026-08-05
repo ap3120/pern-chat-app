@@ -12,6 +12,7 @@ public class LogoutHandler
     {
         config.routes.post("/logout", ctx ->
         {
+            ctx.req().getSession().invalidate();
             ctx.json(Map.of("msg", "User logged out."));
         });
     }

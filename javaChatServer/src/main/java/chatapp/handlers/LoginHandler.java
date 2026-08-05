@@ -19,6 +19,12 @@ public class LoginHandler
                     .check(b -> b.password != null, "password is required.")
                     .get();
             Map<String, Object> response = Postgres.login(connection, body.username, body.password);
+            if (response.containsKey("user_id"))
+            {
+                int userId = (Integer) response.get("user_id");
+                // Create server session
+                ctx.sessionAttribute("user_id", userId);
+            }
             ctx.json(response);
         });
     }

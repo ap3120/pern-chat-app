@@ -7,15 +7,14 @@ import io.javalin.validation.ValidationException;
 import org.junit.jupiter.api.*;
 
 import java.io.IOException;
-import java.net.URI;
+import java.net.CookieManager;
+import java.net.CookiePolicy;
 import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.sql.Connection;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static chatapp.Utils.sendRequestAndAssertResult;
+import static chatapp.Utils.setClient;
 
 /**
  * Unit test for simple App.
@@ -25,7 +24,6 @@ public class AppTest
 {
     private static Javalin server;
     private static final int PORT = 9230;
-    private final String DOMAIN = "http://localhost:";
 
     @BeforeAll
     public static void startServer()
@@ -37,7 +35,7 @@ public class AppTest
         String port = System.getenv().get("DB_PORT");
 
         if (dbname == null)
-        { // Jenkins relies on environment variables and locally it relies on .env
+        { // Jenkins relies on environment variables, locally it relies on .env
             Dotenv dotenv = Dotenv.load();
             dbname = dotenv.get("DB_TEST_NAME");
             user = dotenv.get("DB_TEST_USER");
@@ -79,6 +77,10 @@ public class AppTest
         });
         System.out.println("Server started on port " + PORT);
         server.start(PORT);
+
+        CookieManager cookieManager = new CookieManager();
+        cookieManager.setCookiePolicy(CookiePolicy.ACCEPT_ALL);
+        setClient(HttpClient.newBuilder().cookieHandler(cookieManager).build());
     }
 
     @AfterAll
@@ -100,6 +102,8 @@ public class AppTest
                 "{\"username\": \"Charlie\", \"password\": \"charlie_pwd\"}");
         sendRequestAndAssertResult("Add existing Bob user", RequestMethodEnum.POST, "/users", 200,
                 "{\"error\":\"User Bob already exists.\"}", "{\"username\": \"Bob\", \"password\": \"bob_pwd\"}");
+        sendRequestAndAssertResult("Add user with malformed body", RequestMethodEnum.POST, "/users", 400,
+                "{\"error\":\"Invalid body.\"}", "{\"password\": \"bob_pwd\"}");
     }
 
     @Test
@@ -126,7 +130,7 @@ public class AppTest
     @Order(4)
     public void testUpdateUser()
     {
-        sendRequestAndAssertResult("Test update user", RequestMethodEnum.PUT, "/users/1", 200,
+        sendRequestAndAssertResult("Test update user", RequestMethodEnum.PUT, "/users", 200,
                 "{\"msg\":\"Password successfully updated\"}",
                 "{\"currentPassword\":\"alice_pwd\",\"password\": \"new_alice_pwd\"}");
     }
@@ -135,52 +139,34 @@ public class AppTest
     @Order(5)
     public void testRemoveUser()
     {
-        sendRequestAndAssertResult("Test remove user", RequestMethodEnum.DELETE, "/users/1", 200,
+        sendRequestAndAssertResult("Test remove user", RequestMethodEnum.DELETE, "/users", 200,
                 "{\"msg\":\"User successfully deleted.\"}");
     }
 
-    private void sendRequestAndAssertResult(String pDescription, RequestMethodEnum pMethod, String pEndpoint,
-                                            int pExpectedStatusCode, String pExpectedResult)
+    @Test
+    @Order(6)
+    public void testLogout()
     {
-        sendRequestAndAssertResult(pDescription, pMethod, pEndpoint, pExpectedStatusCode, pExpectedResult, null);
+        sendRequestAndAssertResult("Test login with correct password", RequestMethodEnum.POST, "/login", 200,
+                "{\"user_id\":2,\"username\":\"Bob\"}", "{\"username\": \"Bob\",\"password\": \"bob_pwd\"}");
+        sendRequestAndAssertResult("Test logout user", RequestMethodEnum.POST, "/logout", 200,
+                "{\"msg\":\"User logged out.\"}");
     }
 
-    private void sendRequestAndAssertResult(String pDescription, RequestMethodEnum pMethod, String pEndpoint,
-                                            int pExpectedStatusCode, String pExpectedResult, String pBody)
+    @Test
+    @Order(7)
+    public void testUpdateUserWhenLoggedOut()
     {
-        System.out.println(pDescription);
-        HttpClient client = HttpClient.newHttpClient();
-        HttpRequest request = null;
-        switch (pMethod)
-        {
-            case POST:
-                request = HttpRequest.newBuilder().uri(URI.create(DOMAIN + PORT + pEndpoint))
-                        .POST(HttpRequest.BodyPublishers.ofString(pBody)).header("Content-Type", "application/json")
-                        .build();
-                break;
-            case GET:
-                request = HttpRequest.newBuilder().uri(URI.create(DOMAIN + PORT + pEndpoint)).GET()
-                        .header("Content-Type", "application/json").build();
-                break;
-            case DELETE:
-                request = HttpRequest.newBuilder().uri(URI.create(DOMAIN + PORT + pEndpoint)).DELETE()
-                        .header("Content-Type", "application/json").build();
-                break;
-            case PUT:
-                request = HttpRequest.newBuilder().uri(URI.create(DOMAIN + PORT + pEndpoint))
-                        .PUT(HttpRequest.BodyPublishers.ofString(pBody)).header("Content-Type", "application/json")
-                        .build();
-                break;
-            default:
-        }
-        try
-        {
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            assertEquals(pExpectedStatusCode, response.statusCode());
-            assertEquals(pExpectedResult, response.body());
-        } catch (IOException | InterruptedException e)
-        {
-            fail("Error sending request: " + e.getMessage());
-        }
+        sendRequestAndAssertResult("Test update user when logged out", RequestMethodEnum.PUT, "/users", 401,
+                "{\"error\":\"User not logged in\"}",
+                "{\"currentPassword\":\"alice_pwd\",\"password\": \"new_alice_pwd\"}");
+    }
+
+    @Test
+    @Order(8)
+    public void testRemoveUserWhenLoggedOut()
+    {
+        sendRequestAndAssertResult("Test remove user when logged out", RequestMethodEnum.DELETE, "/users", 401,
+                "{\"error\":\"User not logged in\"}");
     }
 }
