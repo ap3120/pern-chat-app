@@ -45,6 +45,16 @@ paths:
                   username:
                     type: string
                     example: 'Louis'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: 'Invalid body: username is required'
     get:
       tags:
         - users

@@ -3,12 +3,13 @@ package chatapp.handlers;
 import chatapp.Postgres;
 import chatapp.models.AddUserRequestBody;
 import chatapp.models.UpdateUserRequestBody;
-import chatapp.utils.Utils;
 import io.javalin.config.JavalinConfig;
 
 import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
+
+import static chatapp.utils.Utils.requireLogin;
 
 public class UserHandler
 {
@@ -18,6 +19,7 @@ public class UserHandler
         /* Returns all users */
         config.routes.get("/users", ctx ->
         {
+            requireLogin(ctx);
             List<Map<String, Object>> response = Postgres.getUsers(connection);
             ctx.json(response);
         });
@@ -35,7 +37,7 @@ public class UserHandler
 
         config.routes.put("/users", ctx ->
         {
-            int user_id = Utils.requireLogin(ctx);
+            int user_id = requireLogin(ctx);
             UpdateUserRequestBody body = ctx.bodyValidator(UpdateUserRequestBody.class)
                     .check(b -> b.currentPassword != null, "currentPassword is required.")
                     .check(b -> b.password != null, "password is required.")
@@ -51,7 +53,7 @@ public class UserHandler
 
         config.routes.delete("/users", ctx ->
         {
-            int user_id = Utils.requireLogin(ctx);
+            int user_id = requireLogin(ctx);
             Map<String, Object> response = Postgres.deleteUser(connection, user_id);
             ctx.json(response);
         });

@@ -9,6 +9,8 @@ import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 
+import static chatapp.utils.Utils.requireLogin;
+
 public class MessageHandler
 {
 
@@ -17,6 +19,7 @@ public class MessageHandler
         /* Returns all the messages from a chat */
         config.routes.get("/message/{chat_id}", ctx ->
         {
+            requireLogin(ctx);
             int chat_id = Integer.parseInt(ctx.pathParam("chat_id"));
             List<Map<String, Object>> response = Postgres.getMessagesFromChat(connection, chat_id);
             ctx.json(response);
@@ -25,6 +28,7 @@ public class MessageHandler
         /* Writes a new message */
         config.routes.post("/message", ctx ->
         {
+            requireLogin(ctx);
             AddMessageRequestBody body = ctx.bodyValidator(AddMessageRequestBody.class)
                     .check(b -> Utils.isInt(b.sender_id), "sender_id must be an integer.")
                     .check(b -> b.sender_username != null, "sender_username is required.")

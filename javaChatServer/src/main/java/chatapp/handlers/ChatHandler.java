@@ -11,6 +11,8 @@ import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 
+import static chatapp.utils.Utils.requireLogin;
+
 public class ChatHandler
 {
     public static void register(JavalinConfig config, Connection connection) throws IOException
@@ -18,6 +20,7 @@ public class ChatHandler
         /* Add a new chat */
         config.routes.post("/chat", ctx ->
         {
+            requireLogin(ctx);
             CreateChatRequestBody body = ctx.bodyValidator(CreateChatRequestBody.class)
                     .check(b -> Utils.isInt(b.created_by),
                             "created_by must be an integer")
@@ -29,6 +32,7 @@ public class ChatHandler
         /* Add a participant to a chat */
         config.routes.post("/chat/users_chats", ctx ->
         {
+            requireLogin(ctx);
             AddUserToChatRequestBody body = ctx.bodyValidator(AddUserToChatRequestBody.class)
                     .check(b -> Utils.isInt(b.user_id), "user_id must be an integer")
                     .check(b -> Utils.isInt(b.chat_id), "chat_id must be an integer")
@@ -41,7 +45,7 @@ public class ChatHandler
         /* Returns all the chats of a user*/
         config.routes.get("/chat", ctx ->
         {
-            int user_id = Utils.requireLogin(ctx);
+            int user_id = requireLogin(ctx);
             List<Map<String, Object>> response = Postgres.getChatsFromUser(connection, user_id);
             ctx.json(response);
         });
