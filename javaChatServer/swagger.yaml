@@ -237,6 +237,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/chats'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: 'Invalid body: created_by must be an integer'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: 'User not logged in'
     get:
       tags:
         - chat
@@ -275,6 +295,16 @@ paths:
                       type: integer
                       format: int32
                       example: 45
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: 'User not logged in'
   /chat/users_chats:
     post:
       tags:
@@ -298,6 +328,26 @@ paths:
                     type: integer
                     format: int32
                     example: 31
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: 'Invalid body: user_id must be an integer'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: 'User not logged in'
   /message:
     post:
       tags:

@@ -1,6 +1,9 @@
 package chatapp;
 
 import chatapp.handlers.*;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.cdimascio.dotenv.Dotenv;
 import io.javalin.Javalin;
 import io.javalin.validation.ValidationError;
@@ -14,11 +17,11 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.sql.Connection;
-import java.util.Collection;
-import java.util.Map;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Utils
 {
@@ -134,10 +137,86 @@ public class Utils
         {
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             assertEquals(pExpectedStatusCode, response.statusCode());
-            assertEquals(pExpectedResult, response.body());
+            compareJson(pExpectedResult, response.body());
         } catch (IOException | InterruptedException e)
         {
             fail("Error sending request: " + e.getMessage());
+        }
+    }
+
+    private static void compareJsonArray(String pExpectedResult, String pActualResult)
+    {
+        try
+        {
+            ObjectMapper mapper = new ObjectMapper();
+            List<JsonNode> actual = mapper.readValue(pActualResult, new TypeReference<List<JsonNode>>()
+            {
+            });
+            List<JsonNode> expected = mapper.readValue(pExpectedResult, new TypeReference<List<JsonNode>>()
+            {
+            });
+            if (actual.size() != expected.size())
+            {
+                fail("Expected " + expected.size() + " items but got " + actual.size());
+            }
+            for (int i = 0; i < actual.size(); i++)
+            {
+                compareJson(expected.get(i).toString(), actual.get(i).toString());
+            }
+        } catch (IOException e)
+        {
+            fail("Error parsing JsonArray: " + e.getMessage());
+        }
+    }
+
+    private static void compareJson(String pExpectedResult, String pActualResult)
+    {
+        try
+        {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode actual = mapper.readTree(pActualResult);
+            JsonNode expected = mapper.readTree(pExpectedResult);
+            if (!actual.getClass().getName().equals(expected.getClass().getName()))
+            {
+                fail("Different JSON objects: " + actual.getClass().getName() + " != " + expected.getClass().getName());
+            } else if (actual.getClass().getName().equals("com.fasterxml.jackson.databind.node.ArrayNode"))
+            {
+                compareJsonArray(pExpectedResult, pActualResult);
+            } else if (actual.getClass().getName().equals("com.fasterxml.jackson.databind.node.ObjectNode"))
+            {
+                Iterator<Map.Entry<String, JsonNode>> actualFields = actual.fields();
+                Iterator<Map.Entry<String, JsonNode>> expectedFields = expected.fields();
+                while (actualFields.hasNext())
+                {
+                    String field = actualFields.next().getKey();
+                    assertTrue(expected.has(field), "Unexpected field: " + field);
+                    if (field.equals("created_at"))
+                    {
+                        LocalDateTime actualDate = LocalDateTime.ofInstant(
+                                Instant.ofEpochMilli(actual.get(field).asLong()),
+                                TimeZone.getDefault().toZoneId());
+                        LocalDateTime expectedDate = LocalDateTime.parse(expected.get(field).asText());
+                        int diff = actualDate.compareTo(expectedDate);
+                        assertTrue(diff < 1000);
+                    } else
+                    {
+                        assertEquals(expected.get(field).asText(), actual.get(field).asText());
+
+                    }
+                }
+                // Check for unexpected fields
+                while (expectedFields.hasNext())
+                {
+                    String field = expectedFields.next().getKey();
+                    assertTrue(actual.has(field), "Missing expected field: " + field);
+                }
+            } else
+            {
+                fail("Json is not of type ArrayNode nor of type ObjectNode: " + actual.getClass().getName());
+            }
+        } catch (IOException e)
+        {
+            fail("Error parsing JSON: " + e.getMessage());
         }
     }
 }

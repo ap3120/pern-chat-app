@@ -60,7 +60,7 @@ export const Profile = () => {
   const handleClick = async() => {
     if (!validate()) return;
     try {
-      const response = await fetch(`http://localhost:${PORT}/users/${sessionStorage.getItem('user_id')}`, {
+      const response = await fetch(`http://localhost:${PORT}/users`, {
         method: 'PUT',
         body: JSON.stringify({
           currentPassword: currentPassword,

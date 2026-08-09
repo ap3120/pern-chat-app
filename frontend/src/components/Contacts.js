@@ -32,7 +32,7 @@ export const Contacts = ({setContact, closeSocket}) => {
 
   const getChats = useCallback(async() => {
     try {
-      const response = await fetch(`http://localhost:${PORT}/chat/${sessionStorage.getItem('user_id')}`);
+      const response = await fetch(`http://localhost:${PORT}/chat`);
       const jsonResponse = await response.json();
       setChats(jsonResponse);
     } catch (error) {
