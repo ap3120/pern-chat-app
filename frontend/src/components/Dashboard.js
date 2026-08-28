@@ -8,7 +8,7 @@ export const Dashboard = () => {
   const [contact, setContact] = useState({});
   const [messages, setMessages] = useState([]);
   
-  const WEBSOCKET_PORT = process.env.REACT_APP_WEBSOCKET_PORT;
+  const WEBSOCKET_PORT = process.env.REACT_APP_SERVER_PORT;
   
   const navigate = useNavigate();
 
@@ -46,7 +46,7 @@ export const Dashboard = () => {
 
   socket.onmessage = event => {
     const jsonData = JSON.parse(event.data);
-    if (jsonData.content && (parseInt(jsonData.sender_id) === contact.user_id || jsonData.sender_id === sessionStorage.getItem("user_id"))) {
+    if (jsonData.content) {
       setMessages(prevMessages => [...prevMessages, jsonData]);
     }
   }

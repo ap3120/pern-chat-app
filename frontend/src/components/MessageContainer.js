@@ -10,19 +10,24 @@ export const MessageContainer = ({contact, messages, setMessages}) => {
     return {
       p: 1,
       borderRadius: '15px',
-      marginLeft: msg.sender_id === parseInt(sessionStorage.getItem('user_id')) ? 'auto' : 0,
-      marginRight: msg.sender_id === parseInt(sessionStorage.getItem('user_id')) ? 0 : 'auto',
+      marginLeft: msg.receiver_id === parseInt(sessionStorage.getItem('user_id')) ? 0: 'auto',
+      marginRight: msg.receiver_id === parseInt(sessionStorage.getItem('user_id')) ? 'auto' : 0,
       marginBottom: '10px',
       width: 'fit-content',
-      backgroundColor: msg.sender_id === parseInt(sessionStorage.getItem('user_id')) ? 'primary.main' : 'secondary.main',
-      color: msg.sender_id === parseInt(sessionStorage.getItem('user_id')) ? 'primary.contrastText' : 'secondary.contrastText',
+      backgroundColor: msg.receiver_id === parseInt(sessionStorage.getItem('user_id')) ? 'secondary.main' : 'primary.main',
+      color: msg.receiver_id === parseInt(sessionStorage.getItem('user_id')) ? 'secondary.contrastText' : 'primary.contrastText',
     }
   }
 
   const PORT = process.env.REACT_APP_SERVER_PORT;
   const getMessages = useCallback(async() => {
     try {
-      const response = await fetch(`http://localhost:${PORT}/message/${contact.chat_id}`);
+      const response = await fetch(
+          `http://localhost:${PORT}/message/${contact.chat_id}`,
+          {
+            credentials: 'include',
+          }
+      );
       const jsonResponse = await response.json();
       setMessages(jsonResponse);
     } catch (error) {

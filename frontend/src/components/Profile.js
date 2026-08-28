@@ -62,6 +62,7 @@ export const Profile = () => {
     try {
       const response = await fetch(`http://localhost:${PORT}/users`, {
         method: 'PUT',
+        credentials: 'include',
         body: JSON.stringify({
           currentPassword: currentPassword,
           password: password,

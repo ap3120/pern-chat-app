@@ -41,6 +41,7 @@ export const LoginCard = () => {
     try {
       const response = await fetch(`${ENDPOINT}/login`, {
         method: 'POST',
+        credentials: 'include',
         body: JSON.stringify({
           username: username,
           password: password
@@ -89,7 +90,7 @@ export const LoginCard = () => {
     }
   }, []);
 
-  const handleDummy = async() => {
+  /*const handleDummy = async() => {
     if (window.electron === undefined) {
 
     } else {
@@ -111,7 +112,7 @@ export const LoginCard = () => {
           console.log(error);
         });
     }
-  }
+  }*/
 
   const handleCloseError = (event, reason) => {
     if (reason === 'clickaway') {
@@ -120,7 +121,7 @@ export const LoginCard = () => {
     setOpenError(false);
   }
 
-  const handleSave = () => {
+  /*const handleSave = () => {
     if (window.electron !== undefined) {
       window.electron.openSaveDialog(globalVariables.getDefaultPath())
       .then(result => {
@@ -144,7 +145,7 @@ export const LoginCard = () => {
           console.log(error);
         })
     }
-  }
+  }*/
 
   if (sessionStorage.getItem('user_id')) {
     return (<Navigate to='/dashboard'/>);
@@ -162,8 +163,6 @@ export const LoginCard = () => {
       backgroundSize:'cover',
       backgroundPosition:'center'
     }}>
-      <button onClick={handleDummy}>load</button>
-      <button onClick={handleSave}>save</button>
       <Card sx={{display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'center', p:5, backgroundColor:'transparent', backdropFilter:'blur(20px)'}}>
         <ThemeToggle/>
         <TextField

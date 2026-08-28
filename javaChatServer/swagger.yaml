@@ -112,7 +112,7 @@ paths:
                     type: string
                     example: "Password successfully updated"
         '401':
-          description: Incorrect password
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -364,9 +364,6 @@ paths:
                 content:
                   type: string
                   example: "Hello there"
-                sender_id:
-                  type: string
-                  example: "65"
                 sender_username:
                   type: string
                   example: "Louis"
@@ -418,6 +415,26 @@ paths:
                   receiver_username:
                     type: string
                     example: "Alice"
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid body: sender_username is required."
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "User not logged in"
   /message/{chat_id}:
     get:
       tags:
@@ -440,7 +457,20 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/messages'
+                type: array
+                items:
+                  $ref: '#/components/schemas/messages'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "User not logged in"
+
 components:
   schemas:
     users:

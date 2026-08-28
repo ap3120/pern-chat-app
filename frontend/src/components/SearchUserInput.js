@@ -14,6 +14,7 @@ export const SearchUserInput = ({users, setChats, setFilteringUsers}) => {
     try {
       const response = await fetch(`http://localhost:${PORT}/chat`, {
         method: 'POST',
+        credentials: 'include',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
           created_by: sessionStorage.getItem('user_id')
@@ -23,6 +24,7 @@ export const SearchUserInput = ({users, setChats, setFilteringUsers}) => {
       const user_id = users[index].user_id;
       await fetch(`http://localhost:${PORT}/chat/users_chats`, {
         method: 'POST',
+        credentials: 'include',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
           user_id: sessionStorage.getItem('user_id'),
@@ -31,6 +33,7 @@ export const SearchUserInput = ({users, setChats, setFilteringUsers}) => {
       })
       await fetch(`http://localhost:${PORT}/chat/users_chats`, {
         method: 'POST',
+        credentials: 'include',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
           user_id: user_id,

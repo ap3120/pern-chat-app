@@ -44,6 +44,7 @@ export const RegisterCard = () => {
     try {
       const response = await fetch(`${ENDPOINT}/users`, {
         method: 'POST',
+        credentials: 'include',
         body: JSON.stringify({
           username: username,
           password: password

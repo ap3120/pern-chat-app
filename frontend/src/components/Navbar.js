@@ -17,7 +17,12 @@ export const Navbar = ({setFilteringUsers, setUsers, closeSocket}) => {
 
   const handleClick = async() => {
     setFilteringUsers(true);
-    const response = await fetch(`http://localhost:${PORT}/users`);
+    const response = await fetch(
+        `http://localhost:${PORT}/users`,
+        {
+          credentials: 'include',
+        }
+    );
     const jsonResponse = await response.json();
     setUsers(jsonResponse);
   }

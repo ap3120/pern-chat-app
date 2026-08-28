@@ -90,13 +90,7 @@ public class JavaServer
                                         .name(), String.valueOf(ctx.statusCode()))
                                 .inc());
             }
-        });
-        System.out.println("Server started on port " + port);
-        server.start(port);
 
-        /* Start websocket */
-        Javalin socketServer = Javalin.create(config ->
-        {
             config.routes.ws("/ws", wsConfig ->
             {
                 wsConfig.onConnect(WebSocketServer::onOpen);
@@ -104,7 +98,7 @@ public class JavaServer
                 wsConfig.onClose(WebSocketServer::onClose);
             });
         });
-        socketServer.start("localhost", socketPort);
-        System.out.println("WebSocket server started on ws://localhost:" + socketPort + "/ws");
+        System.out.println("Server started on port " + port);
+        server.start(port);
     }
 }

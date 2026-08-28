@@ -28,9 +28,8 @@ public class MessageHandler
         /* Writes a new message */
         config.routes.post("/message", ctx ->
         {
-            requireLogin(ctx);
+            int userId = requireLogin(ctx);
             AddMessageRequestBody body = ctx.bodyValidator(AddMessageRequestBody.class)
-                    .check(b -> Utils.isInt(b.sender_id), "sender_id must be an integer.")
                     .check(b -> b.sender_username != null, "sender_username is required.")
                     .check(b -> Utils.isInt(b.receiver_id), "receiver_id must be an integer.")
                     .check(b -> b.receiver_username != null, "receiver_username is required.")
@@ -39,7 +38,7 @@ public class MessageHandler
             Map<String, Object> response = Postgres.addMessage(
                     connection,
                     body.content,
-                    Integer.parseInt(body.sender_id),
+                    userId,
                     body.sender_username,
                     Integer.parseInt(body.receiver_id),
                     body.receiver_username,

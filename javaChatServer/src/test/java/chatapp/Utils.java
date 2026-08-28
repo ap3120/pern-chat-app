@@ -190,7 +190,7 @@ public class Utils
                 {
                     String field = actualFields.next().getKey();
                     assertTrue(expected.has(field), "Unexpected field: " + field);
-                    if (field.equals("created_at"))
+                    if (field.equals("created_at") || field.equals("send_at"))
                     {
                         LocalDateTime actualDate = LocalDateTime.ofInstant(
                                 Instant.ofEpochMilli(actual.get(field).asLong()),

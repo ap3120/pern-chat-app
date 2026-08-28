@@ -28,16 +28,15 @@ export const TextArea = ({inputRef, contact, sendMessageToSocket}) => {
     try {
       const body = JSON.stringify({
         content: msg,
-        sender_id: sessionStorage.getItem('user_id'),
         sender_username: sessionStorage.getItem('username'),
         receiver_id: contact.user_id,
         receiver_username: contact.username,
-        chat_id: contact.chat_id,
-        send_at: new Date(),
+        chat_id: contact.chat_id
       });
       sendMessageToSocket(body);
       await fetch(`http://localhost:${PORT}/message`, {
         method: 'POST',
+        credentials: 'include',
         body: body,
         headers: {'Content-Type': 'application/json'}
       })
