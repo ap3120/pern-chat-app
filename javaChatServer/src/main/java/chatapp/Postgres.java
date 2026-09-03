@@ -44,14 +44,13 @@ public class Postgres
      */
     public static Map<String, Object> createChat(Connection conn, int created_by)
     {
-        Statement statement;
-        try
+        LocalDateTime created_at = LocalDateTime.now();
+        String query = "insert into chats (created_by, created_at) values (?, ?) returning *;";
+        try (PreparedStatement statement = conn.prepareStatement(query))
         {
-            LocalDateTime created_at = LocalDateTime.now();
-            String query = String.format("insert into chats (created_by, created_at) values ('%s', '%s') returning *;",
-                    created_by, created_at);
-            statement = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-            ResultSet rs = statement.executeQuery(query);
+            statement.setInt(1, created_by);
+            statement.setTimestamp(2, Timestamp.valueOf(created_at));
+            ResultSet rs = statement.executeQuery();
             List<Map<String, Object>> result = parseResultSetToMapList(rs);
             return result.get(0);
         } catch (Exception e)
@@ -70,13 +69,13 @@ public class Postgres
      */
     public static Map<String, Object> addParticipantToChat(Connection conn, int user_id, int chat_id)
     {
-        Statement statement;
-        try
+        String query = "insert into users_chats (user_id, chat_id) values (?, ?) returning *;";
+        try (PreparedStatement statement = conn.prepareStatement(query))
         {
-            String query = String.format("insert into users_chats (user_id, chat_id) values ('%s', '%s') returning *;",
-                    user_id, chat_id);
-            statement = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-            ResultSet rs = statement.executeQuery(query);
+
+            statement.setInt(1, user_id);
+            statement.setInt(2, chat_id);
+            ResultSet rs = statement.executeQuery();
             List<Map<String, Object>> result = parseResultSetToMapList(rs);
             return result.get(0);
         } catch (Exception e)
@@ -94,24 +93,22 @@ public class Postgres
      */
     public static List<Map<String, Object>> getChatsFromUser(Connection conn, int userId)
     {
-        Statement statement;
-        try
+        String query = "select " +
+                "uc1.chat_id, " +
+                "u.user_id, " +
+                "u.username, " +
+                "c.created_at, " +
+                "c.created_by " +
+                "from users_chats as uc1 " +
+                "join users_chats as uc2 on uc1.chat_id = uc2.chat_id " +
+                "join users as u on u.user_id = uc2.user_id " +
+                "join chats as c on c.chat_id = uc1.chat_id " +
+                "where uc1.user_id = ? and uc2.user_id <> ?;";
+        try (PreparedStatement statement = conn.prepareStatement(query))
         {
-            String query = String.format(
-                    "select " +
-                            "uc1.chat_id, " +
-                            "u.user_id, " +
-                            "u.username, " +
-                            "c.created_at, " +
-                            "c.created_by " +
-                            "from users_chats as uc1 " +
-                            "join users_chats as uc2 on uc1.chat_id = uc2.chat_id " +
-                            "join users as u on u.user_id = uc2.user_id " +
-                            "join chats as c on c.chat_id = uc1.chat_id " +
-                            "where uc1.user_id = '%s' and uc2.user_id <> '%s';",
-                    userId, userId);
-            statement = conn.createStatement();
-            ResultSet rs = statement.executeQuery(query);
+            statement.setInt(1, userId);
+            statement.setInt(2, userId);
+            ResultSet rs = statement.executeQuery();
             return parseResultSetToMapList(rs);
         } catch (Exception e)
         {
@@ -127,11 +124,10 @@ public class Postgres
      */
     public static List<Map<String, Object>> getUsers(Connection conn)
     {
-        Statement statement;
-        try
+        String query = "Select user_id, username from users order by user_id asc;";
+        try (PreparedStatement statement = conn.prepareStatement(query))
         {
-            statement = conn.createStatement();
-            ResultSet rs = statement.executeQuery("Select user_id, username from users order by user_id asc;");
+            ResultSet rs = statement.executeQuery();
             return parseResultSetToMapList(rs);
         } catch (Exception e)
         {
@@ -151,12 +147,12 @@ public class Postgres
     public static Map<String, Object> updateUser(Connection conn, int user_id, String prevPasswordToCheck,
                                                  String newPassword)
     {
-        Statement statement;
-        try
+        String query1 = "Select password from users where user_id = ?;";
+        try (PreparedStatement statement1 = conn.prepareStatement(query1, ResultSet.TYPE_SCROLL_SENSITIVE,
+                ResultSet.CONCUR_READ_ONLY))
         {
-            String query = String.format("Select password from users where user_id = '%s';", user_id);
-            statement = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-            ResultSet rs = statement.executeQuery(query);
+            statement1.setInt(1, user_id);
+            ResultSet rs = statement1.executeQuery();
             if (!rs.first())
             {
                 return Map.of("error", "User of user_id " + user_id + " doesn't exist.");
@@ -167,12 +163,20 @@ public class Postgres
             if (result.get("password").equals(hash(prevPasswordToCheck)))
             {
                 String hashedNewPassword = hash(newPassword);
-                String newQuery = String.format("update users set password = '%s' where user_id = '%s' returning *;",
-                        hashedNewPassword, user_id);
-                Statement newStatement = conn.createStatement();
-                ResultSet newRs = newStatement.executeQuery(newQuery);
-                if (newRs != null) return Map.of("msg", "Password successfully updated");
-                return Map.of("error", "Something went wrong, password couldn't be updated.");
+                String query2 = "update users set password = ? where user_id = ? returning *;";
+                try (PreparedStatement statement2 = conn.prepareStatement(query2))
+                {
+                    statement2.setString(1, hashedNewPassword);
+                    statement2.setInt(2, user_id);
+                    ResultSet newRs = statement2.executeQuery();
+                    if (newRs != null)
+                    {
+                        return Map.of("msg", "Password successfully updated");
+                    } else
+                    {
+                        return Map.of("error", "Something went wrong, password couldn't be updated.");
+                    }
+                }
             } else
             {
                 return Map.of("error", "Incorrect password.");
@@ -192,12 +196,11 @@ public class Postgres
      */
     public static Map<String, Object> deleteUser(Connection conn, int user_id)
     {
-        Statement statement;
-        try
+        String query = "delete from users where user_id = ?;";
+        try (PreparedStatement statement = conn.prepareStatement(query))
         {
-            String query = String.format("delete from users where user_id = '%s'", user_id);
-            statement = conn.createStatement();
-            statement.executeUpdate(query);
+            statement.setInt(1, user_id);
+            statement.executeUpdate();
             return Map.of("msg", "User successfully deleted.");
         } catch (Exception e)
         {
@@ -220,16 +223,18 @@ public class Postgres
     public static Map<String, Object> addMessage(Connection conn, String content, int sender_id, String sender_username,
                                                  int receiver_id, String receiver_username, int chat_id)
     {
-        Statement statement;
+        String query = "insert into messages (content, sender_id, sender_username, receiver_id, receiver_username, chat_id, send_at) values(?, ?, ?, ?, ?, ?, ?) returning *;";
         LocalDateTime send_at = LocalDateTime.now();
-        try
+        try (PreparedStatement statement = conn.prepareStatement(query))
         {
-            String query = String.format(
-                    "insert into messages (content, sender_id, sender_username, receiver_id, receiver_username, chat_id, send_at) values('%s', '%s', '%s', '%s', '%s', '%s', '%s') returning *;",
-                    content, sender_id, sender_username, receiver_id, receiver_username, chat_id, send_at
-            );
-            statement = conn.createStatement();
-            ResultSet rs = statement.executeQuery(query);
+            statement.setString(1, content);
+            statement.setInt(2, sender_id);
+            statement.setString(3, sender_username);
+            statement.setInt(4, receiver_id);
+            statement.setString(5, receiver_username);
+            statement.setInt(6, chat_id);
+            statement.setTimestamp(7, Timestamp.valueOf(send_at));
+            ResultSet rs = statement.executeQuery();
             List<Map<String, Object>> result = parseResultSetToMapList(rs);
             return result.get(0);
         } catch (Exception e)
@@ -247,12 +252,11 @@ public class Postgres
      */
     public static List<Map<String, Object>> getMessagesFromChat(Connection conn, int chat_id)
     {
-        Statement statement;
-        try
+        String query = "select * from messages where chat_id = ? order by send_at";
+        try (PreparedStatement statement = conn.prepareStatement(query))
         {
-            String query = String.format("select * from messages where chat_id = '%s' order by send_at", chat_id);
-            statement = conn.createStatement();
-            ResultSet rs = statement.executeQuery(query);
+            statement.setInt(1, chat_id);
+            ResultSet rs = statement.executeQuery();
             return parseResultSetToMapList(rs);
         } catch (Exception e)
         {
@@ -269,17 +273,12 @@ public class Postgres
      */
     public static boolean userExists(Connection conn, String username)
     {
-        Statement statement;
-        try
+        String query = "select * from users where username = ?;";
+        try (PreparedStatement statement = conn.prepareStatement(query))
         {
-            String query = String.format("select * from users where username = '%s';", username);
-            statement = conn.createStatement();
-            ResultSet rs = statement.executeQuery(query);
-            if (rs.next())
-            {
-                return true;
-            }
-            return false;
+            statement.setString(1, username);
+            ResultSet rs = statement.executeQuery();
+            return rs.next();
         } catch (Exception e)
         {
             e.printStackTrace();
@@ -297,15 +296,17 @@ public class Postgres
      */
     public static Map<String, Object> addUser(Connection conn, String username, String password)
     {
-        Statement statement;
-        try
+        String query = "insert into users (username, password) values (?, ?) returning *;";
+        try (PreparedStatement statement = conn.prepareStatement(query))
         {
-            if (userExists(conn, username)) return Map.of("error", "User " + username + " already exists.");
+            if (userExists(conn, username))
+            {
+                return Map.of("error", "User " + username + " already exists.");
+            }
             String hashedPassword = hash(password);
-            String query = String.format("insert into users (username, password) values ('%s', '%s') returning *;",
-                    username, hashedPassword);
-            statement = conn.createStatement();
-            ResultSet rs = statement.executeQuery(query);
+            statement.setString(1, username);
+            statement.setString(2, hashedPassword);
+            ResultSet rs = statement.executeQuery();
             Map<String, Object> result = parseResultSetToMapList(rs).get(0);
             result.remove("password");
             return result;
@@ -317,16 +318,15 @@ public class Postgres
 
     public static Map<String, Object> login(Connection conn, String username, String password)
     {
-        Statement statement;
-        try
+        String query = "select * from users where username = ?;";
+        try (PreparedStatement statement = conn.prepareStatement(query))
         {
             if (!userExists(conn, username))
             {
                 return Map.of("error", "User " + username + " doesn't exist.");
             }
-            String query = String.format("select * from users where username = '%s';", username);
-            statement = conn.createStatement();
-            ResultSet rs = statement.executeQuery(query);
+            statement.setString(1, username);
+            ResultSet rs = statement.executeQuery();
             Map<String, Object> result = parseResultSetToMapList(rs).get(0);
             String dbPassword = result.get("password").toString();
             if (dbPassword.equals(hash(password)))
@@ -348,10 +348,8 @@ public class Postgres
      */
     public static void cleanDatabase(Connection conn)
     {
-        Statement statement;
-        try
+        try (Statement statement = conn.createStatement())
         {
-            statement = conn.createStatement();
             statement.executeUpdate("TRUNCATE TABLE users CASCADE;");
             statement.executeUpdate("ALTER SEQUENCE users_user_id_seq RESTART WITH 1;");
             statement.executeUpdate("ALTER SEQUENCE messages_message_id_seq RESTART WITH 1;");
