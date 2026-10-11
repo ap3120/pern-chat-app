@@ -32,6 +32,10 @@ public class UserHandler
                     .check(b -> b.password != null, "password is required.")
                     .get();
             Map<String, Object> response = Postgres.addUser(connection, body.username, body.password);
+            if (response.containsKey("error"))
+            {
+                ctx.status(409);
+            }
             ctx.json(response);
         });
 
@@ -48,6 +52,10 @@ public class UserHandler
                     body.currentPassword,
                     body.password
             );
+            if (response.containsKey("error"))
+            {
+                ctx.status(409);
+            }
             ctx.json(response);
         });
 
@@ -55,6 +63,10 @@ public class UserHandler
         {
             int user_id = requireLogin(ctx);
             Map<String, Object> response = Postgres.deleteUser(connection, user_id);
+            if (response.containsKey("error"))
+            {
+                ctx.status(404);
+            }
             ctx.json(response);
         });
     }

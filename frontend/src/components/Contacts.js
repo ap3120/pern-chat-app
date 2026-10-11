@@ -59,14 +59,14 @@ export const Contacts = ({setContact, closeSocket}) => {
       <Navbar setFilteringUsers={setFilteringUsers} setUsers={setUsers} closeSocket={closeSocket} />
       {filteringUsers &&
         <Box sx={{p:2}}>
-          <SearchUserInput users={users} setChats={setChats} setFilteringUsers={setFilteringUsers}/>
+          <SearchUserInput data-testid="search-user-input" users={users} setChats={setChats} setFilteringUsers={setFilteringUsers}/>
         </Box>
       }
       <List sx={{p: 2}}>
       {chats.map((chat, index) => (
         <ListItem sx={getStyle(index)} key={index} onClick={() => handleClick(chat, index)}>
           <AccountCircleIcon sx={{fontSize:'50px', marginRight:'20px'}}/>
-          <ListItemText>{chat.username}</ListItemText>
+          <ListItemText data-testid={`${chat.username}-contact`}>{chat.username}</ListItemText>
         </ListItem>
       ))}
       </List>

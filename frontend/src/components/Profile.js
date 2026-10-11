@@ -22,7 +22,7 @@ export const Profile = () => {
   const [errors, setErrors] = useState({});
 
   const navigate = useNavigate();
-  const PORT = process.env.REACT_APP_PORT;
+  const PORT = process.env.REACT_APP_SERVER_PORT;
 
   const validate = () => {
     let tmp = {};
@@ -70,18 +70,40 @@ export const Profile = () => {
         headers: {'Content-Type': 'application/json'}
       })
       const jsonResponse = await response.json();
-      if (jsonResponse.msg === 'Password successfully updated.') {
-        setMsg('Your password was successfully updated!');
+      console.log(jsonResponse, jsonResponse.ok);
+      if (response.ok) {
+        setMsg(jsonResponse.msg);
         setOpenSuccess(true);
       } else {
-        setMsg("Incorrect password...")
+        setMsg(jsonResponse.error ? jsonResponse.error : "Something went wrong...")
         setOpenError(true);
       }
     } catch(error) {
       console.log(error)
-      setMsg("Couldn't connect to server...");
+      setMsg("Something went wrong...");
       setOpenError(true);
     }
+  }
+
+  const handleRemoveUser = async() => {
+   /* try {
+      const response = await fetch(`http://localhost:${PORT}/users`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {'Content-Type': 'application/json'}
+      });
+      const jsonResponse = await response.json();
+      if (response.ok) {
+        closeSocket();
+      } else {
+        setMsg(jsonResponse.error ? jsonResponse.error : "Something went wrong...")
+        setOpenError(true);
+      }
+    } catch(error) {
+      console.log(error);
+      setMsg("Something went wrong...");
+      setOpenError(true);
+    }*/
   }
 
   return (
@@ -95,10 +117,10 @@ export const Profile = () => {
       </Box>
       <Box sx={{ display: "flex", alignItems: "center"}}>
         <ProfilePicture id={sessionStorage.getItem("user_id")} />
-        <Button variant="contained" sx={{mr: 2}}>edit</Button>
-        <Button variant="contained">remove</Button>
+        <Button data-testid="remove-user-btn" variant="contained" onClick={handleRemoveUser}>remove</Button>
       </Box>
       <OutlinedInput
+        data-testid="current-password-field"
         type={showCurrentPassword ? 'text' : 'password'}
         endAdornment={
           <InputAdornment position="end">
@@ -111,12 +133,13 @@ export const Profile = () => {
             </IconButton>
           </InputAdornment>
         }
-        placeholder="Current Password"
+        placeholder="Current password"
         sx={{m:1, width:'90%', maxWidth:'500px'}}
         onChange={(e) => {setCurrentPassword(e.target.value)}}
         {...(errors.currentPassword && {error: true})}
       />
       <OutlinedInput
+        data-testid="new-password-field"
         type={showPassword ? 'text' : 'password'}
         endAdornment={
           <InputAdornment position="end">
@@ -129,12 +152,13 @@ export const Profile = () => {
             </IconButton>
           </InputAdornment>
         }
-        placeholder="Password"
+        placeholder="New password"
         sx={{m:1, width:'90%', maxWidth:'500px'}}
         onChange={(e) => {setPassword(e.target.value)}}
         {...(errors.password && {error: true})}
       />
       <OutlinedInput
+        data-testid="confirm-new-password-field"
         type={showConfirmPassword ? 'text' : 'password'}
         endAdornment={
           <InputAdornment position="end">
@@ -147,26 +171,26 @@ export const Profile = () => {
             </IconButton>
           </InputAdornment>
         }
-        placeholder="Confirm Password"
+        placeholder="Confirm new password"
         sx={{m:1, width:'90%', maxWidth:'500px'}}
         onChange={(e) => {setConfirmPassword(e.target.value)}}
         {...(errors.confirmPassword && {error: true})}
       />
       {errors.currentPassword && (
-        <FormHelperText error>{errors.currentPassword}</FormHelperText>
+        <FormHelperText data-testid="current-password-helper-text" error>{errors.currentPassword}</FormHelperText>
       )}
       {errors.password && (
-        <FormHelperText error>{errors.password}</FormHelperText>
+        <FormHelperText data-testid="new-password-helper-text" error>{errors.password}</FormHelperText>
       )}
       {errors.confirmPassword && (
-        <FormHelperText error>{errors.confirmPassword}</FormHelperText>
+        <FormHelperText data-testid="confirm-new-password-helper-text" error>{errors.confirmPassword}</FormHelperText>
       )}
-      <Button variant='contained' onClick={handleClick}>Change Password</Button>
+      <Button data-testid="change-password-btn" variant='contained' onClick={handleClick}>Change Password</Button>
       <Snackbar open={openError} autoHideDuration={3000} onClose={handleCloseError} anchorOrigin={{vertical: 'bottom', horizontal: 'center'}}>
-        <Alert severity='error' onClose={handleCloseError}>{msg}</Alert>
+        <Alert data-testid="error-alert" severity='error' onClose={handleCloseError}>{msg}</Alert>
       </Snackbar>
       <Snackbar open={openSuccess} autoHideDuration={3000} onClose={handleCloseSuccess} anchorOrigin={{vertical: 'bottom', horizontal: 'center'}}>
-        <Alert severity='success' onClose={handleCloseError}>{msg}</Alert>
+        <Alert data-testid="success-alert" severity='success' onClose={handleCloseError}>{msg}</Alert>
       </Snackbar>
     </Box>
   )

@@ -49,7 +49,7 @@ export const MessageContainer = ({contact, messages, setMessages}) => {
       {messages.map((msg, index) => (
         <Box key={index} sx={getStyle(msg)}>
           {msg.content.split('<br />').map((elem, i) => (
-            <Typography variant='body2' key={i} sx={{overflowWrap:'break-word', wordBreak:'break-word'}}>{elem}</Typography>
+            <Typography data-testid={`message-${index}`} variant='body2' key={i} sx={{overflowWrap:'break-word', wordBreak:'break-word'}}>{elem}</Typography>
           ))}
           <Typography sx={{textAlign:'right', fontSize:'0.7rem'}}>{dayjs(msg.send_at).format('HH:mm, ddd DD MMM YYYY')}</Typography>
         </Box>

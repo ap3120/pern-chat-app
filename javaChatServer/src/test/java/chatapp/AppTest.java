@@ -33,19 +33,19 @@ public class AppTest
         sendRequestAndAssertResult("Add new Charlie user", RequestMethodEnum.POST, "/users", 200,
                 "{\"user_id\":3,\"username\":\"Charlie\"}",
                 "{\"username\": \"Charlie\", \"password\": \"charlie_pwd\"}");
-        sendRequestAndAssertResult("Add existing Bob user", RequestMethodEnum.POST, "/users", 200,
+        sendRequestAndAssertResult("Add existing Bob user", RequestMethodEnum.POST, "/users", 409,
                 "{\"error\":\"User Bob already exists.\"}", "{\"username\": \"Bob\", \"password\": \"bob_pwd\"}");
         sendRequestAndAssertResult("Add user with malformed body", RequestMethodEnum.POST, "/users", 400,
                 "{\"error\":\"Invalid body: username is required\"}", "{\"password\": \"bob_pwd\"}");
     }
-    
+
     @Test
     @Order(2)
     public void testLogin()
     {
-        sendRequestAndAssertResult("Test login with non existing user", RequestMethodEnum.POST, "/login", 200,
+        sendRequestAndAssertResult("Test login with non existing user", RequestMethodEnum.POST, "/login", 401,
                 "{\"error\":\"User Louis doesn't exist.\"}", "{\"username\": \"Louis\",\"password\": \"louis_pwd\"}");
-        sendRequestAndAssertResult("Test login with wrong password", RequestMethodEnum.POST, "/login", 200,
+        sendRequestAndAssertResult("Test login with wrong password", RequestMethodEnum.POST, "/login", 401,
                 "{\"error\":\"Wrong password for Alice\"}", "{\"username\": \"Alice\",\"password\": \"wrong_pwd\"}");
         sendRequestAndAssertResult("Test login with correct password", RequestMethodEnum.POST, "/login", 200,
                 "{\"user_id\":1,\"username\":\"Alice\"}", "{\"username\": \"Alice\",\"password\": \"alice_pwd\"}");

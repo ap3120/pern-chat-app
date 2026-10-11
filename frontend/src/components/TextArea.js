@@ -60,13 +60,14 @@ export const TextArea = ({inputRef, contact, sendMessageToSocket}) => {
   return (
     <Box sx={{pb: 2, display:'flex', justifyContent:'center', alignItems:'end', backgroundColor:'background.main'}}>
       <StyledTextArea
+          data-testid="text-area"
         ref={inputRef}
         value={message}
         maxRows={4}
         onKeyDown={(e) => handleKeyDown(e)}
         onChange={(e) => setMessage(e.target.value)}
       />
-      <IconButton onClick={handleClick}>
+      <IconButton data-testid="send-msg-btn" onClick={handleClick}>
         <SendIcon sx={{color: 'text.main'}}/>
       </IconButton>
     </Box>

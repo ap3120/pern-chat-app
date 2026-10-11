@@ -17,14 +17,14 @@ import java.util.Map;
 public class JavaServer
 {
     private final static int port = 9000;
-    private final static int socketPort = 9200;
 
     public static void main(String[] args) throws IOException
     {
+        boolean testMode = args.length == 1 && args[0].equals("test");
         Dotenv dotenv = Dotenv.load();
-        String dbname = dotenv.get("DB_NAME");
-        String user = dotenv.get("DB_USER");
-        String password = dotenv.get("DB_PASSWORD");
+        String dbname = testMode ? dotenv.get("DB_TEST_NAME") : dotenv.get("DB_NAME");
+        String user = testMode ? dotenv.get("DB_TEST_USER") : dotenv.get("DB_USER");
+        String password = testMode ? dotenv.get("DB_TEST_PASSWORD") : dotenv.get("DB_PASSWORD");
         String corsOrigin = dotenv.get("CORS_ORIGIN");
         Connection connection = Postgres.connectToDatabase(dbname, user, password, "localhost", "5432");
 
@@ -78,6 +78,10 @@ public class JavaServer
                 MessageHandler.register(config, connection);
                 ProfilePictureHandler.register(config, connection);
                 UserHandler.register(config, connection);
+                if (testMode)
+                {
+                    TestHandler.register(config, connection);
+                }
             } catch (IOException e)
             {
                 System.out.println("Error registering handlers" + e.getMessage());
@@ -98,7 +102,7 @@ public class JavaServer
                 wsConfig.onClose(WebSocketServer::onClose);
             });
         });
-        System.out.println("Server started on port " + port);
+        System.out.println((testMode ? "Test server " : "Server ") + "started on port " + port);
         server.start(port);
     }
 }

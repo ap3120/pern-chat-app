@@ -24,6 +24,9 @@ public class LoginHandler
                 int userId = (Integer) response.get("user_id");
                 // Create server session
                 ctx.sessionAttribute("user_id", userId);
+            } else
+            {
+                ctx.status(401);
             }
             ctx.json(response);
         });

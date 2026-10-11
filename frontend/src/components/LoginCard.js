@@ -50,18 +50,19 @@ export const LoginCard = () => {
           "Content-Type": "application/json"
         }
       });
+      const jsonResponse = await response.json();
       if (response.ok) {
-        const jsonResponse = await response.json();
-        if (jsonResponse.msg) {
-          if (jsonResponse.msg === `User ${username} doesn't exist.`) setErrors(prevErrors => ({...prevErrors, username: jsonResponse.msg}));
-          if (jsonResponse.msg === `Wrong password for ${username}`) setErrors(prevErrors => ({...prevErrors, password: jsonResponse.msg}));
-        } else {
           sessionStorage.setItem('user_id', jsonResponse.user_id);
           sessionStorage.setItem('username', jsonResponse.username);
           navigate('/dashboard');
-        }
       } else {
-        setMsg("Couldn't connect to server...");
+        if (jsonResponse.error === `User ${username} doesn't exist.`) {
+          setErrors(prevErrors => ({...prevErrors, username: jsonResponse.error}));
+        }
+        if (jsonResponse.msg === `Wrong password for ${username}`) {
+          setErrors(prevErrors => ({...prevErrors, password: jsonResponse.error}));
+        }
+        setMsg(jsonResponse.error);
         setOpenError(true);
       }
     } catch (error) {
@@ -90,62 +91,12 @@ export const LoginCard = () => {
     }
   }, []);
 
-  /*const handleDummy = async() => {
-    if (window.electron === undefined) {
-
-    } else {
-      window.electron.openFileDialog([{name: "All Files", extensions: ["jpeg", "png"]}], globalVariables.getDefaultPath())
-        .then(async result => {
-          console.log(result);
-          const response = await fetch(`${ENDPOINT}/profilePicture`, {
-            method: "POST",
-            body: JSON.stringify({
-              data: result
-            }),
-            headers: {
-              "Content-Type": "application/json"
-            }
-          });
-          console.log(response);
-        })
-        .catch(error => {
-          console.log(error);
-        });
-    }
-  }*/
-
   const handleCloseError = (event, reason) => {
     if (reason === 'clickaway') {
       return;
     }
     setOpenError(false);
   }
-
-  /*const handleSave = () => {
-    if (window.electron !== undefined) {
-      window.electron.openSaveDialog(globalVariables.getDefaultPath())
-      .then(result => {
-          if (result) {
-            console.log(result);
-            window.electron.saveFile(result, "hello world")
-            .then(res => {
-                if (res.error) {
-                  console.log(res.error);
-                } else {
-                  console.log("Successfully write file at " + result)
-                }
-
-              })
-            .catch(error => {
-                console.log(error);
-              })
-          }
-        })
-      .catch(error => {
-          console.log(error);
-        })
-    }
-  }*/
 
   if (sessionStorage.getItem('user_id')) {
     return (<Navigate to='/dashboard'/>);
@@ -166,7 +117,7 @@ export const LoginCard = () => {
       <Card sx={{display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'center', p:5, backgroundColor:'transparent', backdropFilter:'blur(20px)'}}>
         <ThemeToggle/>
         <TextField
-          data-cy={`username`}
+          data-testid={`username-field`}
           label="Username"
           variant="outlined"
           sx={{m:1, width:'100%'}}
@@ -175,6 +126,7 @@ export const LoginCard = () => {
         />
         <OutlinedInput
           id="password"
+          data-testid="password-field"
           type={showPassword ? 'text' : 'password'}
           endAdornment={
             <InputAdornment position="end">
@@ -193,13 +145,13 @@ export const LoginCard = () => {
           {...(errors.password && {error: true})}
         />
         {errors.password && (
-          <FormHelperText id='helper-text' error>{errors.password}</FormHelperText>
+          <FormHelperText id='helper-text' data-testid="password-form-helper" error>{errors.password}</FormHelperText>
         )}
-        <Button id='login-btn' variant='contained' onClick={handleLogin}>Login</Button>
-        <p>Don't have an account yet? <NavLink to='/register'>Register here</NavLink></p>
+        <Button id='login-btn' data-testid="login-btn" variant='contained' onClick={handleLogin}>Login</Button>
+        <p>Don't have an account yet? <NavLink data-testid="register-page-link" to='/register'>Register here</NavLink></p>
       </Card>
       <Snackbar open={openError} autoHideDuration={3000} onClose={handleCloseError} anchorOrigin={{vertical: 'bottom', horizontal: 'center'}}>
-        <Alert severity='error' onClose={handleCloseError}>{msg}</Alert>
+        <Alert data-testid="error-alert" severity='error' onClose={handleCloseError}>{msg}</Alert>
       </Snackbar>
     </Box>
   )

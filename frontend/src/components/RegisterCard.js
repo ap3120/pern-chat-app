@@ -53,22 +53,16 @@ export const RegisterCard = () => {
           "Content-Type": "application/json"
         }
       });
-      if (!response.ok) {
-        setMsg('Something went wrong...');
-        setOpenError(true);
-        throw new Error("Network response was not OK.");
-      }
       const jsonResponse = await response.json();
-      if (jsonResponse.msg) {
-        setMsg(jsonResponse.msg);
-        setOpenError(true);
-      } else {
+      if (response.ok) {
         setNewUsername(jsonResponse.username);
         setOpenSuccess(true);
+      } else {
+        setMsg(jsonResponse.error ? jsonResponse.error : "Something went wrong...");
+        setOpenError(true);
       }
     } catch (error) {
-      console.log(error);
-      setMsg("Couldn't connect to server...");
+      setMsg(error);
       setOpenError(true);
     }
   }
@@ -105,6 +99,7 @@ export const RegisterCard = () => {
       <Card sx={{display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'center', p:5, backgroundColor:'transparent', backdropFilter:'blur(20px)'}}>
         <ThemeToggle />
         <TextField
+            data-testid="username-field"
           label="Username"
           variant="outlined"
           sx={{m:1, width:'100%'}}
@@ -112,6 +107,7 @@ export const RegisterCard = () => {
           {...(errors.username && {error: true, helperText: errors.username})}
         />
         <OutlinedInput
+            data-testid="password-field"
           type={showPassword ? 'text' : 'password'}
           endAdornment={
             <InputAdornment position="end">
@@ -130,9 +126,10 @@ export const RegisterCard = () => {
           {...(errors.password && {error: true})}
         />
         {errors.password && (
-          <FormHelperText error>{errors.password}</FormHelperText>
+          <FormHelperText data-testid="password-form-helper" error>{errors.password}</FormHelperText>
         )}
         <OutlinedInput
+            data-testid="confirm-password-field"
           type={showConfirmationPassword ? 'text' : 'password'}
           endAdornment={
             <InputAdornment position="end">
@@ -151,16 +148,16 @@ export const RegisterCard = () => {
           {...(errors.confirmationPassword && {error: true})}
         />
         {errors.confirmationPassword && (
-          <FormHelperText error>{errors.confirmationPassword}</FormHelperText>
+          <FormHelperText data-testid="confirm-password-form-helper" error>{errors.confirmationPassword}</FormHelperText>
         )}
-        <Button variant='contained' onClick={handleRegister}>Register</Button>
-        <p>Already have an account ? <NavLink to='/'>Login here</NavLink></p>
+        <Button data-testid="register-btn" variant='contained' onClick={handleRegister}>Register</Button>
+        <p>Already have an account ? <NavLink data-testid="login-page-link" to='/'>Login here</NavLink></p>
       </Card>
       <Snackbar open={openSuccess} autoHideDuration={3000} onClose={handleCloseSuccess} anchorOrigin={{vertical: 'bottom', horizontal: 'center'}}>
-        <Alert severity='success' onClose={handleCloseSuccess}>User {newUsername} was successfully created.</Alert>
+        <Alert data-testid="success-alert" severity='success' onClose={handleCloseSuccess}>User {newUsername} was successfully created.</Alert>
       </Snackbar>
       <Snackbar open={openError} autoHideDuration={3000} onClose={handleCloseError} anchorOrigin={{vertical: 'bottom', horizontal: 'center'}}>
-        <Alert severity='error' onClose={handleCloseError}>{msg}</Alert>
+        <Alert data-testid="error-alert" severity='error' onClose={handleCloseError}>{msg}</Alert>
       </Snackbar>
     </Box>
   )

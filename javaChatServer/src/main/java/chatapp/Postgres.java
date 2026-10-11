@@ -196,6 +196,10 @@ public class Postgres
      */
     public static Map<String, Object> deleteUser(Connection conn, int user_id)
     {
+        if (!userExists(conn, user_id))
+        {
+            return Map.of("error", "User with user_id " + user_id + " does not exist.");
+        }
         String query = "delete from users where user_id = ?;";
         try (PreparedStatement statement = conn.prepareStatement(query))
         {
@@ -265,11 +269,11 @@ public class Postgres
     }
 
     /**
-     * Check if a user exists
+     * Check if a user exists by username
      *
      * @param conn
      * @param username
-     * @return
+     * @return true if the user exists, else false
      */
     public static boolean userExists(Connection conn, String username)
     {
@@ -281,7 +285,29 @@ public class Postgres
             return rs.next();
         } catch (Exception e)
         {
-            e.printStackTrace();
+            System.out.println(e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Check if a user exists by user_id
+     *
+     * @param conn
+     * @param user_id
+     * @return true if the user exists, else false
+     */
+    public static boolean userExists(Connection conn, int user_id)
+    {
+        String query = "select * from users where user_id = ?;";
+        try (PreparedStatement statement = conn.prepareStatement(query))
+        {
+            statement.setInt(1, user_id);
+            ResultSet rs = statement.executeQuery();
+            return rs.next();
+        } catch (Exception e)
+        {
+            System.out.println(e.getMessage());
             return false;
         }
     }

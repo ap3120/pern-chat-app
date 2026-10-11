@@ -55,6 +55,16 @@ paths:
                   error:
                     type: string
                     example: 'Invalid body: username is required'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: 'User Bob already exists.'
     get:
       tags:
         - users
@@ -191,7 +201,7 @@ paths:
               schema:
                 type: object
                 properties:
-                  msg:
+                  error:
                     type: string
                     example: "Wrong password for Louis"
   /logout:

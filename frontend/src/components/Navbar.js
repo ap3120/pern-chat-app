@@ -51,16 +51,16 @@ export const Navbar = ({setFilteringUsers, setUsers, closeSocket}) => {
         <Toolbar sx={{display:'flex', justifyContent:'space-between'}}>
           <Box sx={{display:'flex', alignItems:'center'}}>
             <AccountCircleIcon sx={{fontSize:'50px', marginRight:'20px'}}/>
-            <Typography>{sessionStorage.getItem('username')}</Typography>
+            <Typography data-testid="session-username">{sessionStorage.getItem('username')}</Typography>
           </Box>
           <Box>
             <Tooltip title='New chat'>
-              <IconButton color='inherit' onClick={handleClick}>
+              <IconButton data-testid="new-chat-btn" color='inherit' onClick={handleClick}>
                 <ChatBubbleIcon/>
               </IconButton>
             </Tooltip>
             <Tooltip title="Settings">
-              <IconButton color='inherit' onClick={(e) => openSettings(e)}>
+              <IconButton data-testid="settings-btn" color='inherit' onClick={(e) => openSettings(e)}>
                 <MoreVert/>
               </IconButton>
             </Tooltip>
