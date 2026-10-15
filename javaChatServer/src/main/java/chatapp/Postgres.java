@@ -38,49 +38,109 @@ public class Postgres
     /**
      * Add a chat
      *
-     * @param conn       the connection object
-     * @param created_by the chat creator
-     * @return added chat to json
+     * @param conn          the connection object
+     * @param created_by    the chat creator
+     * @param other_user_id the other chat participant
+     * @return added chat as a map
      */
-    public static Map<String, Object> createChat(Connection conn, int created_by)
+    public static Map<String, Object> createChat(Connection conn, int created_by, int other_user_id) throws SQLException
     {
-        LocalDateTime created_at = LocalDateTime.now();
-        String query = "insert into chats (created_by, created_at) values (?, ?) returning *;";
-        try (PreparedStatement statement = conn.prepareStatement(query))
+        if (created_by == other_user_id)
         {
-            statement.setInt(1, created_by);
-            statement.setTimestamp(2, Timestamp.valueOf(created_at));
-            ResultSet rs = statement.executeQuery();
-            List<Map<String, Object>> result = parseResultSetToMapList(rs);
-            return result.get(0);
-        } catch (Exception e)
-        {
-            return Map.of("error", "Error inserting chat: " + e.getMessage());
+            return Map.of("error", "A chat requires two different users"/*, "statusCode", 409*/);
         }
-    }
-
-    /**
-     * Add a participant to a chat
-     *
-     * @param conn
-     * @param user_id the participant
-     * @param chat_id the chat
-     * @return added row
-     */
-    public static Map<String, Object> addParticipantToChat(Connection conn, int user_id, int chat_id)
-    {
-        String query = "insert into users_chats (user_id, chat_id) values (?, ?) returning *;";
-        try (PreparedStatement statement = conn.prepareStatement(query))
+        boolean previousAutoCommit = conn.getAutoCommit();
+        try
         {
+            conn.setAutoCommit(false);
+            int user1 = Math.min(created_by, other_user_id);
+            int user2 = Math.max(created_by, other_user_id);
+            String findQuery = """
+                    SELECT c.chat_id
+                    FROM chats c
+                    JOIN direct_chats dc ON dc.chat_id = c.chat_id
+                    WHERE dc.user_1 = ?
+                      AND dc.user_2 = ?
+                    """;
+            try (PreparedStatement statement = conn.prepareStatement(findQuery))
+            {
+                statement.setInt(1, user1);
+                statement.setInt(2, user2);
+                try (ResultSet rs = statement.executeQuery())
+                {
+                    if (rs.next())
+                    {
+                        conn.rollback();
+                        return Map.of("error", "Chat already exists"/*, "statusCode", 409*/);
+                    }
+                }
+            }
+            LocalDateTime created_at = LocalDateTime.now();
+            String createQuery = """
+                    INSERT INTO chats (created_by, created_at)
+                    VALUES (?, ?)
+                    RETURNING *;
+                    """;
+            int chatId;
+            List<Map<String, Object>> result;
+            try (PreparedStatement statement = conn.prepareStatement(createQuery))
+            {
+                statement.setInt(1, created_by);
+                statement.setTimestamp(2, Timestamp.valueOf(created_at));
+                try (ResultSet rs = statement.executeQuery())
+                {
+                    result = parseResultSetToMapList(rs);
+                    if (result.isEmpty())
+                    {
+                        return Map.of("error", "Chat creation returned no chat_id"/*, "statusCode", 400*/);
+                    }
+                    chatId = (int) result.get(0).get("chat_id");
 
-            statement.setInt(1, user_id);
-            statement.setInt(2, chat_id);
-            ResultSet rs = statement.executeQuery();
-            List<Map<String, Object>> result = parseResultSetToMapList(rs);
+                }
+            }
+            String directQuery = """
+                    INSERT INTO direct_chats (chat_id, user_1, user_2)
+                    VALUES (?, ?, ?)
+                    """;
+            try (PreparedStatement statement = conn.prepareStatement(directQuery))
+            {
+                statement.setInt(1, chatId);
+                statement.setInt(2, user1);
+                statement.setInt(3, user2);
+                statement.executeUpdate();
+            }
+            String participantQuery = """
+                    INSERT INTO users_chats (user_id, chat_id)
+                    VALUES (?, ?)
+                    """;
+            try (PreparedStatement statement = conn.prepareStatement(participantQuery))
+            {
+                statement.setInt(1, created_by);
+                statement.setInt(2, chatId);
+                statement.addBatch();
+
+                statement.setInt(1, other_user_id);
+                statement.setInt(2, chatId);
+                statement.addBatch();
+
+                statement.executeBatch();
+            }
+            conn.commit();
             return result.get(0);
-        } catch (Exception e)
+        } catch (SQLException | RuntimeException e)
         {
-            return Map.of("error", "Error add chat participant: " + e.getMessage());
+            System.out.println("There was an error creating the chat " + e.getMessage());
+            try
+            {
+                conn.rollback();
+            } catch (SQLException rollbackError)
+            {
+                e.addSuppressed(rollbackError);
+            }
+            return Map.of("error", "There was an error creating the chat"/*, "statusCode", 400*/);
+        } finally
+        {
+            conn.setAutoCommit(previousAutoCommit);
         }
     }
 
@@ -93,17 +153,19 @@ public class Postgres
      */
     public static List<Map<String, Object>> getChatsFromUser(Connection conn, int userId)
     {
-        String query = "select " +
-                "uc1.chat_id, " +
-                "u.user_id, " +
-                "u.username, " +
-                "c.created_at, " +
-                "c.created_by " +
-                "from users_chats as uc1 " +
-                "join users_chats as uc2 on uc1.chat_id = uc2.chat_id " +
-                "join users as u on u.user_id = uc2.user_id " +
-                "join chats as c on c.chat_id = uc1.chat_id " +
-                "where uc1.user_id = ? and uc2.user_id <> ?;";
+        String query = """
+        	select
+                uc1.chat_id,
+                u.user_id,
+                u.username,
+                c.created_at,
+                c.created_by
+                from users_chats as uc1
+               	join users_chats as uc2 on uc1.chat_id = uc2.chat_id
+                join users as u on u.user_id = uc2.user_id
+                join chats as c on c.chat_id = uc1.chat_id
+                where uc1.user_id = ? and uc2.user_id <> ?;
+                """;
         try (PreparedStatement statement = conn.prepareStatement(query))
         {
             statement.setInt(1, userId);
@@ -113,6 +175,36 @@ public class Postgres
         } catch (Exception e)
         {
             return List.of(Map.of("error", "Could not read chats from database: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Add a user
+     *
+     * @param conn
+     * @param username
+     * @param password
+     * @return the added user
+     */
+    public static Map<String, Object> addUser(Connection conn, String username, String password)
+    {
+        String query = "insert into users (username, password) values (?, ?) returning *;";
+        try (PreparedStatement statement = conn.prepareStatement(query))
+        {
+            if (userExists(conn, username))
+            {
+                return Map.of("error", "User " + username + " already exists.");
+            }
+            String hashedPassword = hash(password);
+            statement.setString(1, username);
+            statement.setString(2, hashedPassword);
+            ResultSet rs = statement.executeQuery();
+            Map<String, Object> result = parseResultSetToMapList(rs).get(0);
+            result.remove("password");
+            return result;
+        } catch (Exception e)
+        {
+            return Map.of("error", "Something went wrong with the server.");
         }
     }
 
@@ -312,36 +404,6 @@ public class Postgres
         }
     }
 
-    /**
-     * Add a user
-     *
-     * @param conn
-     * @param username
-     * @param password
-     * @return the added user
-     */
-    public static Map<String, Object> addUser(Connection conn, String username, String password)
-    {
-        String query = "insert into users (username, password) values (?, ?) returning *;";
-        try (PreparedStatement statement = conn.prepareStatement(query))
-        {
-            if (userExists(conn, username))
-            {
-                return Map.of("error", "User " + username + " already exists.");
-            }
-            String hashedPassword = hash(password);
-            statement.setString(1, username);
-            statement.setString(2, hashedPassword);
-            ResultSet rs = statement.executeQuery();
-            Map<String, Object> result = parseResultSetToMapList(rs).get(0);
-            result.remove("password");
-            return result;
-        } catch (Exception e)
-        {
-            return Map.of("error", "Something went wrong with the server.");
-        }
-    }
-
     public static Map<String, Object> login(Connection conn, String username, String password)
     {
         String query = "select * from users where username = ?;";
@@ -380,6 +442,7 @@ public class Postgres
             statement.executeUpdate("ALTER SEQUENCE users_user_id_seq RESTART WITH 1;");
             statement.executeUpdate("ALTER SEQUENCE messages_message_id_seq RESTART WITH 1;");
             statement.executeUpdate("ALTER SEQUENCE chats_chat_id_seq RESTART WITH 1;");
+            statement.executeUpdate("ALTER SEQUENCE direct_chats_chat_id_seq RESTART WITH 1;");
         } catch (Exception pException)
         {
             System.out.println("Error cleaning tables: " + pException.getMessage());

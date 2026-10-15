@@ -1,4 +1,4 @@
-import {useCallback, useMemo, useState} from 'react';
+import {useCallback, useMemo, useState, useRef, useEffect} from 'react';
 import {Contacts} from './Contacts.js';
 import {Chat} from './Chat.js';
 import {Navigate, useNavigate} from 'react-router-dom';
@@ -11,51 +11,90 @@ export const Dashboard = () => {
   const WEBSOCKET_PORT = process.env.REACT_APP_SERVER_PORT;
   
   const navigate = useNavigate();
-
-  const socket = useMemo(() => new WebSocket("ws://localhost:" + WEBSOCKET_PORT + "/ws"), []);
   
-  const sendMessageToSocket = useCallback(data => {
-    if (socket) {
-      socket.send(data);
+  const socketRef = useRef(null);
+  
+  useEffect(() => {
+    if (!sessionStorage.getItem("username")) {
+      return;
     }
-  }, [socket]);
+    
+    const socket = new WebSocket("ws://localhost:" + WEBSOCKET_PORT + "/ws");
+    socketRef.current = socket;
+    
+    let heartbeat = null;
+    socket.onopen = () => {
+      const message = {new_client_id: sessionStorage.getItem("user_id")}
+      socket.send(JSON.stringify(message));
+
+      heartbeat = setInterval(() => {
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({"type": "ping"}));
+        }
+      }, 10_000);
+    }
+  
+    socket.onmessage = event => {
+      const jsonData = JSON.parse(event.data);
+      if (jsonData.content) {
+        setMessages(prevMessages => [...prevMessages, jsonData]);
+      }
+    }
+  
+    socket.onclose = () => {
+      if (heartbeat !== null) {
+        clearInterval(socket.heartbeat);
+        heartbeat = null 
+      }
+      if (socket.current === socket) {
+        socket.current = null;
+      }
+    }
+  
+    return () => {
+      if (heartbeat !== null) {
+        clearInterval(heartbeat);
+      }
+
+      // Prevent this cleanup from triggering logout behavior.
+      socket.onclose = null;
+      socket.onopen = null;
+      socket.onmessage = null;
+      socket.onerror = null;
+
+      if (socket.readyState === WebSocket.OPEN ||
+          socket.readyState === WebSocket.CONNECTING) {
+        socket.close();
+      }
+
+      if (socketRef.current === socket) {
+        socketRef.current = null;
+      }
+    }
+  }, [WEBSOCKET_PORT]);
+
+  const sendMessageToSocket = useCallback(data => {
+    const socket = socketRef.current;
+    if (socket?.readyState === WebSocket.OPEN) {
+      socket.send(data);
+    } else {
+      console.log("Socket is not connected");
+    }
+  }, []);
 
   const closeSocket = useCallback(() => {
+    const socket = socketRef.current;
     if (socket) {
+      socketRef.current = null;
       socket.close();
-      sessionStorage.setItem('user_id', '');
-      sessionStorage.setItem('username', '');
-      navigate('/');
     }
-  }, [socket, navigate]);
+    sessionStorage.setItem('user_id', '');
+    sessionStorage.setItem('username', '');
+    navigate('/');
+  }, [navigate]);
   
   if (!sessionStorage.getItem('username')) {
     return (<Navigate to='/'/>);
-  }
-
-  socket.onopen = () => {
-    const message = {new_client_id: sessionStorage.getItem("user_id")}
-    socket.send(JSON.stringify(message));
-
-    socket.heartbeat = setInterval(() => {
-      if (socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({"type": "ping"}));
-      }
-    }, 10_000);
-  }
-
-  socket.onmessage = event => {
-    const jsonData = JSON.parse(event.data);
-    if (jsonData.content) {
-      setMessages(prevMessages => [...prevMessages, jsonData]);
-    }
-  }
-
-  socket.onclose = () => {
-    clearInterval(socket.heartbeat);
-    sessionStorage.setItem('user_id', '');
-    sessionStorage.setItem('username', '');
-    navigate("/");
   }
 
   return (

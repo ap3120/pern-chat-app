@@ -28,3 +28,15 @@ create table messages
     send_at           timestamp
 );
 
+CREATE TABLE direct_chats
+(
+    chat_id INTEGER serial PRIMARY KEY
+        REFERENCES chats (chat_id)
+            ON DELETE CASCADE,
+    user_1  INTEGER NOT NULL
+        REFERENCES users (user_id),
+    user_2  INTEGER NOT NULL
+        REFERENCES users (user_id),
+    CHECK (user_1 < user_2),
+    UNIQUE (user_1, user_2)
+);

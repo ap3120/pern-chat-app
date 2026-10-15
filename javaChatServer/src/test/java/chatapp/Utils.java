@@ -28,6 +28,7 @@ public class Utils
     private static final int PORT = 9230;
     private static Javalin server;
     private static HttpClient client = HttpClient.newHttpClient();
+    private static Connection connection;
 
     public static void setClient(HttpClient client)
     {
@@ -49,7 +50,7 @@ public class Utils
             user = dotenv.get("DB_TEST_USER");
             password = dotenv.get("DB_TEST_PASSWORD");
         }
-        Connection connection = Postgres.connectToDatabase(dbname, user, password, host != null ? host : "localhost",
+        connection = Postgres.connectToDatabase(dbname, user, password, host != null ? host : "localhost",
                 port != null ? port : "5432");
         Postgres.cleanDatabase(connection);
         /* Start chat server */
@@ -95,6 +96,10 @@ public class Utils
 
     public static void stopServer()
     {
+        if (connection != null)
+        {
+            Postgres.cleanDatabase(connection);
+        }
         server.stop();
     }
 

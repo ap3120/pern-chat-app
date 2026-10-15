@@ -44,46 +44,35 @@ public class ChatTest
     public void testCreateChatWithMalformedBody()
     {
         sendRequestAndAssertResult("Test create chat with malformed body", RequestMethodEnum.POST, "/chat", 400,
-                "{\"error\":\"Invalid body: created_by must be an integer\"}", "{\"created_by\":\"strange body\"}");
+                "{\"error\":\"Invalid body: created_by must be an integer\"}",
+                "{\"created_by\":\"strange body\",\"other_user_id\":1}");
     }
 
     @Test
     @Order(4)
-    public void testCreateChat()
+    public void testCreateChatWithSameUser()
     {
         LocalDateTime now = LocalDateTime.now();
-        sendRequestAndAssertResult("Test create chat", RequestMethodEnum.POST, "/chat", 200,
-                "{\"chat_id\":1,\"created_by\":1,\"created_at\":\"" + now + "\"}", "{\"created_by\":1}");
+        sendRequestAndAssertResult("Test create chat", RequestMethodEnum.POST, "/chat", 409,
+                "{\"error\":\"A chat requires two different users\"}", "{\"created_by\":1,\"other_user_id\":1}");
     }
 
     @Test
     @Order(5)
-    public void testAddParticipantToChatWithMalformedBody()
+    public void testCreateChat()
     {
-        sendRequestAndAssertResult("Test add participant to chat with invalid user_id", RequestMethodEnum.POST,
-                "/chat/users_chats", 400, "{\"error\":\"Invalid body: user_id must be an integer\"}",
-                "{\"user_id\": \"Not an integer\", \"chat_id\": 1}");
-        sendRequestAndAssertResult("Test add participant to chat with missing user_id field", RequestMethodEnum.POST,
-                "/chat/users_chats", 400, "{\"error\":\"Invalid body: user_id must be an integer\"}",
-                "{\"chat_id\": 1}");
-        sendRequestAndAssertResult("Test add participant to chat with invalid chat_id", RequestMethodEnum.POST,
-                "/chat/users_chats", 400, "{\"error\":\"Invalid body: chat_id must be an integer\"}",
-                "{\"user_id\": \"1\", \"chat_id\": \"Not an integer\"}");
-        sendRequestAndAssertResult("Test add participant to chat with missing chat_id field", RequestMethodEnum.POST,
-                "/chat/users_chats", 400, "{\"error\":\"Invalid body: chat_id must be an integer\"}",
-                "{\"user_id\": 1}");
+        LocalDateTime now = LocalDateTime.now();
+        sendRequestAndAssertResult("Test create chat", RequestMethodEnum.POST, "/chat", 200,
+                "{\"chat_id\":1,\"created_by\":1,\"created_at\":\"" + now + "\"}",
+                "{\"created_by\":1,\"other_user_id\":2}");
     }
 
     @Test
     @Order(6)
-    public void testAddParticipantToChat()
+    public void testCreateDuplicateChat()
     {
-        sendRequestAndAssertResult("Test add Alice user to chat", RequestMethodEnum.POST,
-                "/chat/users_chats", 200, "{\"user_id\":1,\"chat_id\":1}",
-                "{\"user_id\": 1, \"chat_id\": 1}");
-        sendRequestAndAssertResult("Test add Bob user to chat", RequestMethodEnum.POST,
-                "/chat/users_chats", 200, "{\"user_id\":2,\"chat_id\":1}",
-                "{\"user_id\": 2, \"chat_id\": 1}");
+        sendRequestAndAssertResult("Test create chat", RequestMethodEnum.POST, "/chat", 409,
+                "{\"error\":\"Chat already exists\"}", "{\"created_by\":2,\"other_user_id\":1}");
     }
 
     @Test
@@ -108,20 +97,11 @@ public class ChatTest
     public void testCreateChatWhenLoggedOut()
     {
         sendRequestAndAssertResult("Test create chat when logged out", RequestMethodEnum.POST, "/chat", 401,
-                "{\"error\":\"User not logged in\"}", "{\"created_by\":1}");
+                "{\"error\":\"User not logged in\"}", "{\"created_by\":1,\"other_user_id\":2}");
     }
 
     @Test
     @Order(10)
-    public void testAddParticipantToChatWhenLoggedOut()
-    {
-        sendRequestAndAssertResult("Test add Alice user to chat when logged out", RequestMethodEnum.POST,
-                "/chat/users_chats", 401, "{\"error\":\"User not logged in\"}",
-                "{\"user_id\": 1, \"chat_id\": 1}");
-    }
-
-    @Test
-    @Order(11)
     public void testGetChatsWhenLoggedOut()
     {
         sendRequestAndAssertResult("Get Alice chats when logged out", RequestMethodEnum.GET, "/chat", 401,

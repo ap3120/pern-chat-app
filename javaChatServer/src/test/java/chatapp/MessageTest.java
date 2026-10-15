@@ -45,7 +45,8 @@ public class MessageTest
     {
         LocalDateTime now = LocalDateTime.now();
         sendRequestAndAssertResult("Test create chat", RequestMethodEnum.POST, "/chat", 200,
-                "{\"chat_id\":1,\"created_by\":1,\"created_at\":\"" + now + "\"}", "{\"created_by\":1}");
+                "{\"chat_id\":1,\"created_by\":1,\"created_at\":\"" + now + "\"}",
+                "{\"created_by\":1,\"other_user_id\":2}");
     }
 
     @Test

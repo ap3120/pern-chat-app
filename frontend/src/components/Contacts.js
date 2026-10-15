@@ -39,6 +39,7 @@ export const Contacts = ({setContact, closeSocket}) => {
           },
       );
       const jsonResponse = await response.json();
+      console.log(jsonResponse)
       setChats(jsonResponse);
     } catch (error) {
       console.log(error);
