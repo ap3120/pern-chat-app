@@ -154,14 +154,14 @@ public class Postgres
     public static List<Map<String, Object>> getChatsFromUser(Connection conn, int userId)
     {
         String query = """
-        	select
+                select
                 uc1.chat_id,
                 u.user_id,
                 u.username,
                 c.created_at,
                 c.created_by
                 from users_chats as uc1
-               	join users_chats as uc2 on uc1.chat_id = uc2.chat_id
+                join users_chats as uc2 on uc1.chat_id = uc2.chat_id
                 join users as u on u.user_id = uc2.user_id
                 join chats as c on c.chat_id = uc1.chat_id
                 where uc1.user_id = ? and uc2.user_id <> ?;

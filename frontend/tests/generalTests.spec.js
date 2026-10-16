@@ -18,27 +18,11 @@ const shortPwd = "short";
 const nonMatchingPwd = "non_matching_pwd";
 const wrongPwd = "wrong_pwd";
 
-test.describe('tests', () => {
+test.describe('General tests', () => {
     test.describe.configure({ mode: 'serial' });
     
     let context;
     let page;
-
-    test.beforeAll(async ({request, browser}) => {
-        console.log("before all tests");
-        context = await browser.newContext();
-        page = await context.newPage();
-        const response = await request.post("/test/reset-db");
-        expect(response.ok()).toBeTruthy();
-        await page.goto('http://localhost:3000/');
-    })
-
-    test.afterAll(async ({request}) => {
-        console.log("after all tests");
-        const response = await request.post("/test/reset-db");
-        expect(response.ok()).toBeTruthy();
-        await context.close();
-    })
 
     test.beforeEach(async({}, testInfo) => {
         console.log(`Test "${testInfo.title}" starting`);
@@ -48,22 +32,25 @@ test.describe('tests', () => {
         console.log(`Test "${testInfo.title}" ending`);
     })
 
-    test('Register new users', async () => {
+    test('Register new users', async ({browser}) => {
+        context = await browser.newContext();
+        page = await context.newPage();
+        await page.goto('http://localhost:3000/');
         await page.getByTestId('register-page-link').click();
         await fillRegisterForm(page, user1, shortPwd, shortPwd);
         await expect(page.getByTestId('password-form-helper')).toHaveText('Password must be at least height characters long');
-        await fillRegisterForm(page, user1, 'mdp_test_user1', 'mdp_test_user');
+        await fillRegisterForm(page, user1, user1Pwd, nonMatchingPwd);
         await expect(page.getByTestId('confirm-password-form-helper')).toHaveText('Passwords must match');
         // Creating new user1
-        await registerNewUser(page, user1, 'mdp_test_user1', 'mdp_test_user1');
+        await registerNewUser(page, user1, user1Pwd, user1Pwd);
         // Creating new user2
-        await registerNewUser(page, user2, 'mdp_test_user2', 'mdp_test_user2');
+        await registerNewUser(page, user2, user2Pwd, user2Pwd);
         // Creating existing user1
-        await fillRegisterForm(page, user1, 'mdp_test_user1', 'mdp_test_user1')
+        await fillRegisterForm(page, user1, user1Pwd, user1Pwd)
         await expect(page.getByTestId('error-alert')).toBeVisible();
         await expect(page.getByTestId('error-alert')).toHaveText(`User ${user1} already exists.`);
         // Creating new user3
-        await registerNewUser(page, user3, 'mdp_test_user3', 'mdp_test_user3');
+        await registerNewUser(page, user3, user3Pwd, user3Pwd);
         await page.getByTestId('login-page-link').click();
     });
 

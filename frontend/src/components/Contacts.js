@@ -60,7 +60,7 @@ export const Contacts = ({setContact, closeSocket}) => {
       <Navbar setFilteringUsers={setFilteringUsers} setUsers={setUsers} closeSocket={closeSocket} />
       {filteringUsers &&
         <Box sx={{p:2}}>
-          <SearchUserInput data-testid="search-user-input" users={users} setChats={setChats} setFilteringUsers={setFilteringUsers}/>
+          <SearchUserInput data-testid="search-user-input" users={users} chats={chats} setFilteringUsers={setFilteringUsers}/>
         </Box>
       }
       <List sx={{p: 2}}>

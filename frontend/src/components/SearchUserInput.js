@@ -1,13 +1,18 @@
 import {TextField, Autocomplete, Alert, Snackbar} from '@mui/material';
 import {useState} from 'react';
-export const SearchUserInput = ({users, setChats, setFilteringUsers}) => {
+export const SearchUserInput = ({users, chats, setFilteringUsers}) => {
 
   const PORT = process.env.REACT_APP_SERVER_PORT;
   const [value, setValue] = useState('');
   const [error, setError] = useState("");
   const [openError, setOpenError] = useState(false);
 
-  const arr = users.map(elem => elem.username);
+  const arr = users.filter(
+      user => {
+        const existingChats = chats.map(chat => chat.user_id);
+        return user.user_id !== parseInt(sessionStorage.getItem('user_id')) && ! existingChats.includes(user.user_id)
+      }
+  ).map(elem => elem.username);
 
   const handleChange = async(e, v) => {
     const index = users.findIndex(elem => elem.username === v);
@@ -32,7 +37,6 @@ export const SearchUserInput = ({users, setChats, setFilteringUsers}) => {
     } catch(error) {
       console.log(error);
     }
-
   }
 
   const handleCloseError = (event, reason) => {

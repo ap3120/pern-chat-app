@@ -35,13 +35,19 @@ export default defineConfig({
 
   /* Configure projects for major browsers */
   projects: [
-    /*{
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },*/
+    {
+      name: 'setup db',
+      testMatch: /global\.setup\.js/,
+      teardown: 'cleanup db'
+    },
+    {
+      name: 'cleanup db',
+      testMatch: /global\.teardown\.js/,
+    },
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'], channel: 'chromium' },
+      dependencies: ['setup db'],
     }
   ],
 
